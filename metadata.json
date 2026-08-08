@@ -1,0 +1,6 @@
+{
+  "name": "Circuit Bazaar",
+  "description": "Nepal's specification-first hardware marketplace for PC components, IoT gear, laptops, and networking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

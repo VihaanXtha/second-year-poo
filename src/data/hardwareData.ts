@@ -1,0 +1,351 @@
+import { Product, Vendor, CommunityBuild } from '../types';
+
+export const HERO_IMAGE = "https://lh3.googleusercontent.com/aida-public/AB6AXuBnZB-4W2CaAknZleiSdimaD5ejlsgYJZhYbGZ7mYPfJa7Ms2RNTdmlCa3Koy5SqqjknJpvul5cQcNWV5YAR-9SIZYbVbIIVT2Z8ES9fibu4N3urLMyQaO4QTJirUc8NnH-h6gOX45dzrUSV-xDPNN5Y1M27i2WYhjA62e8flTC5ZJM1-3wUIHIfMJnk9VVZtgMp9W24Ta63I63bxyziNv-XSlKxQrWFaq2rf01JJP9kbVeHXl8ujr0";
+
+export const LOGO_IMAGE = "https://lh3.googleusercontent.com/aida/AP1WRLvdJkLt7WjiAILFzc0j0v2XQvdf3EfsjfkcviiQyoyYJoj8N_xcWuxMsAgRgMOyU_ecrmYGcDLBKHj_dk7pn9q990VxyGY72tF39kuP7B4q13FHANsWh64FT_N4ckKf7tqYxsByEXMMe5csDGDGp0J64y3VQu7YE7amY8RlD_h-w1zgawDvWdDyVdYQJ_nrHrry-bU4MqJ58E8zbTY5otVdp5VmeB2AfyvSSMGlHBxcrT1lElvVttL6sw";
+
+export const VENDORS: Vendor[] = [
+  {
+    id: 'ng',
+    code: 'NG',
+    name: 'Neo Gear Tech',
+    rating: 4.9,
+    reviewsCount: 128,
+    specialty: 'High-End Workstations',
+    badgeBg: 'bg-[#131b2e]',
+    location: 'New Road, Kathmandu',
+    verifiedSince: '2021',
+    address: 'Shop 204, Tamrakar Complex, New Road, Kathmandu',
+    phone: '+977 1-4239821',
+    description: 'Premier supplier of high-end enterprise workstations, Threadripper systems, and ECC memory solutions in Nepal.',
+    totalProducts: 142
+  },
+  {
+    id: 'ce',
+    code: 'CE',
+    name: 'Circuit Emporium',
+    rating: 4.8,
+    reviewsCount: 95,
+    specialty: 'IoT & Embedded',
+    badgeBg: 'bg-[#dc2626]',
+    location: 'Kupondole, Lalitpur',
+    verifiedSince: '2022',
+    address: 'Engineering Lane, Kupondole, Lalitpur',
+    phone: '+977 1-5541290',
+    description: 'Specialized in microcontrollers, ESP32 modules, LoRa gateways, precision sensors, and custom PCB prototypes.',
+    totalProducts: 210
+  },
+  {
+    id: 'kt',
+    code: 'KT',
+    name: 'Kathmandu Techies',
+    rating: 4.7,
+    reviewsCount: 210,
+    specialty: 'Gaming Peripherals',
+    badgeBg: 'bg-[#10b981]',
+    location: 'Putalisadak, Kathmandu',
+    verifiedSince: '2020',
+    address: 'Star Mall 3rd Floor, Putalisadak, Kathmandu',
+    phone: '+977 1-4438102',
+    description: 'Authorized retailer for mechanical keyboards, custom switches, high-refresh OLED gaming monitors, and cooling gear.',
+    totalProducts: 185
+  },
+  {
+    id: 'sn',
+    code: 'SN',
+    name: 'Server Nepal',
+    rating: 5.0,
+    reviewsCount: 42,
+    specialty: 'Enterprise Networking',
+    badgeBg: 'bg-[#565e74]',
+    location: 'Chipledhunga, Pokhara',
+    verifiedSince: '2022',
+    address: 'IT Park Enclave, Chipledhunga, Pokhara',
+    phone: '+977 61-538901',
+    description: 'Enterprise rack servers, Ubiquiti UniFi routing systems, fiber transceivers, and managed L3 switches.',
+    totalProducts: 88
+  }
+];
+
+export const PRODUCTS: Product[] = [
+  {
+    id: 'prod-1',
+    sku: 'GPU-RTX4090-24G-OC',
+    name: 'NVIDIA GeForce RTX 4090 OC 24GB GDDR6X',
+    category: 'PC Components',
+    subCategory: 'Graphics Cards',
+    priceNpr: 285000,
+    image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=600&q=80',
+    vendorId: 'ng',
+    vendorName: 'Neo Gear Tech',
+    vendorCode: 'NG',
+    isVerifiedVendor: true,
+    stockStatus: 'In Stock',
+    stockCount: 4,
+    rating: 4.9,
+    reviewCount: 38,
+    warranty: '3 Years Official Warranty',
+    description: 'Flagship Ada Lovelace architecture GPU with 16,384 CUDA cores, 24GB GDDR6X memory on a 384-bit bus, and DLSS 3 frame generation support.',
+    specs: [
+      { label: 'ARCHITECTURE', value: 'Ada Lovelace 4nm' },
+      { label: 'CUDA CORES', value: '16,384' },
+      { label: 'VRAM', value: '24GB GDDR6X 21 Gbps' },
+      { label: 'BUS WIDTH', value: '384-bit' },
+      { label: 'TDP / POWER', value: '450W (16-pin 12VHPWR)' },
+      { label: 'RECOMMENDED PSU', value: '850W Gold' }
+    ],
+    inBox: ['RTX 4090 OC Card', '4x 8-pin to 16-pin Adapter', 'Support Bracket', 'User Manual']
+  },
+  {
+    id: 'prod-2',
+    sku: 'CPU-AMD-7950X3D-AM5',
+    name: 'AMD Ryzen 9 7950X3D (16-Core, 32-Thread with 3D V-Cache)',
+    category: 'PC Components',
+    subCategory: 'Processors',
+    priceNpr: 98500,
+    image: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?auto=format&fit=crop&w=600&q=80',
+    vendorId: 'ng',
+    vendorName: 'Neo Gear Tech',
+    vendorCode: 'NG',
+    isVerifiedVendor: true,
+    stockStatus: 'In Stock',
+    stockCount: 9,
+    rating: 4.9,
+    reviewCount: 44,
+    warranty: '3 Years Warranty',
+    description: 'Ultimate gaming and content creation processor with 128MB L3 cache powered by 3D V-Cache technology on Socket AM5.',
+    specs: [
+      { label: 'SOCKET', value: 'AM5' },
+      { label: 'CORES / THREADS', value: '16 Cores / 32 Threads' },
+      { label: 'BASE / BOOST CLOCK', value: '4.2 GHz / 5.7 GHz' },
+      { label: 'L3 CACHE', value: '128 MB 3D V-Cache' },
+      { label: 'TDP', value: '120W' },
+      { label: 'MEMORY SUPPORT', value: 'DDR5 Dual-Channel' }
+    ],
+    inBox: ['Processor in Box', 'AMD Case Badge', 'Warranty Certificate']
+  },
+  {
+    id: 'prod-3',
+    sku: 'MB-ROG-X670E-HERO',
+    name: 'ASUS ROG Crosshair X670E Hero AM5 Motherboard',
+    category: 'PC Components',
+    subCategory: 'Motherboards',
+    priceNpr: 88000,
+    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+    vendorId: 'ng',
+    vendorName: 'Neo Gear Tech',
+    vendorCode: 'NG',
+    isVerifiedVendor: true,
+    stockStatus: 'In Stock',
+    stockCount: 6,
+    rating: 4.8,
+    reviewCount: 22,
+    warranty: '3 Years Warranty',
+    description: 'Extreme power delivery 18+2 stage motherboard with PCIe 5.0 x16 slots, 5x M.2 slots (2x PCIe 5.0), USB4, and Wi-Fi 6E.',
+    specs: [
+      { label: 'CHIPSET', value: 'AMD X670E' },
+      { label: 'FORM FACTOR', value: 'ATX' },
+      { label: 'VRM STAGES', value: '18+2 Teamed Power Stages (110A)' },
+      { label: 'MEMORY SLOTS', value: '4x DDR5 (Up to 192GB, 7800+ MT/s)' },
+      { label: 'EXPANSION', value: '2x PCIe 5.0 x16' },
+      { label: 'NETWORK', value: '2.5G LAN + Wi-Fi 6E' }
+    ],
+    inBox: ['ROG X670E Motherboard', 'WiFi Antenna', 'ROG USB Drive with Drivers', 'SATA Cables', 'M.2 Q-Latch Kits']
+  },
+  {
+    id: 'prod-4',
+    sku: 'IOT-ESP32-S3-WROOM-2',
+    name: 'ESP32-S3-WROOM-1 N16R8 Dual-Core AI Microcontroller Module',
+    category: 'IoT Gear',
+    subCategory: 'Microcontrollers',
+    priceNpr: 1450,
+    image: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?auto=format&fit=crop&w=600&q=80',
+    vendorId: 'ce',
+    vendorName: 'Circuit Emporium',
+    vendorCode: 'CE',
+    isVerifiedVendor: true,
+    stockStatus: 'In Stock',
+    stockCount: 120,
+    rating: 4.9,
+    reviewCount: 88,
+    warranty: '6 Months Replacement',
+    description: 'Powerful 240MHz Xtensa LX7 dual-core MCU with 16MB Flash, 8MB PSRAM, Wi-Fi 4, BLE 5.0, and vector instructions for machine learning/vision.',
+    specs: [
+      { label: 'PROCESSOR', value: 'Xtensa 32-bit LX7 Dual-Core @ 240MHz' },
+      { label: 'FLASH / PSRAM', value: '16MB SPI Flash / 8MB PSRAM' },
+      { label: 'WIRELESS', value: 'Wi-Fi 802.11 b/g/n + BLE 5.0 Mesh' },
+      { label: 'GPIO PINS', value: '45 Configurable GPIOs' },
+      { label: 'USB INTERFACE', value: 'Dual USB Type-C (Native + UART)' },
+      { label: 'OPERATING VOLTAGE', value: '3.3V DC (5V USB Input)' }
+    ],
+    inBox: ['ESP32-S3 Development Board', 'Header Pins (Unsoldered)']
+  },
+  {
+    id: 'prod-5',
+    sku: 'IOT-LORA-SX1262-868M',
+    name: 'Semtech SX1262 LoRaWAN Node Transceiver (868/915 MHz)',
+    category: 'IoT Gear',
+    subCategory: 'Wireless & Communication',
+    priceNpr: 2850,
+    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=600&q=80',
+    vendorId: 'ce',
+    vendorName: 'Circuit Emporium',
+    vendorCode: 'CE',
+    isVerifiedVendor: true,
+    stockStatus: 'In Stock',
+    stockCount: 45,
+    rating: 4.8,
+    reviewCount: 31,
+    warranty: '1 Year Warranty',
+    description: 'Long-range ultra-low power RF transceiver module operating in 868MHz/915MHz bands with up to +22dBm output power for smart agriculture and remote sensors.',
+    specs: [
+      { label: 'CHIP', value: 'Semtech SX1262' },
+      { label: 'FREQUENCY', value: '863-928 MHz Configurable' },
+      { label: 'TX POWER', value: '+22 dBm Max Power' },
+      { label: 'RANGE', value: 'Up to 15km Line of Sight' },
+      { label: 'INTERFACE', value: 'SPI + Bus Status GPIO' },
+      { label: 'CURRENT CONSUMPTION', value: '160mA TX @ +22dBm, 1.6uA Sleep' }
+    ],
+    inBox: ['SX1262 Module', '3dBi SMA Rubber Antenna', 'U.FL to SMA Cable']
+  },
+  {
+    id: 'prod-6',
+    sku: 'LAP-ROG-STRIX-G16-2024',
+    name: 'ASUS ROG Strix G16 (2024) Core i9-14900HX / RTX 4080 12GB',
+    category: 'Laptops',
+    subCategory: 'Gaming Laptops',
+    priceNpr: 325000,
+    image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=600&q=80',
+    vendorId: 'kt',
+    vendorName: 'Kathmandu Techies',
+    vendorCode: 'KT',
+    isVerifiedVendor: true,
+    stockStatus: 'Low Stock',
+    stockCount: 2,
+    rating: 4.9,
+    reviewCount: 18,
+    warranty: '2 Years Asus Global Warranty',
+    description: 'High performance gaming laptop equipped with Intel Core i9-14900HX, RTX 4080 12GB, 32GB DDR5-5600, 1TB PCIe 4.0 NVMe, and 16" QHD+ 240Hz ROG Nebula Display.',
+    specs: [
+      { label: 'PROCESSOR', value: 'Intel Core i9-14900HX (24C/32T, up to 5.8GHz)' },
+      { label: 'GRAPHICS', value: 'NVIDIA RTX 4080 12GB GDDR6 (175W TGP)' },
+      { label: 'RAM', value: '32GB DDR5-5600 (Expandable to 64GB)' },
+      { label: 'DISPLAY', value: '16" WQXGA (2560x1600) 240Hz 3ms 100% DCI-P3' },
+      { label: 'STORAGE', value: '1TB PCIe 4.0 NVMe M.2 SSD' },
+      { label: 'WEIGHT', value: '2.50 kg' }
+    ],
+    inBox: ['Laptop', '330W Power Adapter', 'ROG Impact Gaming Mouse', 'User Documentation']
+  },
+  {
+    id: 'prod-7',
+    sku: 'NET-UBI-UDM-SE-RACK',
+    name: 'Ubiquiti UniFi Dream Machine Special Edition (UDM-SE)',
+    category: 'Networking',
+    subCategory: 'Enterprise Routers & Firewalls',
+    priceNpr: 84000,
+    image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=600&q=80',
+    vendorId: 'sn',
+    vendorName: 'Server Nepal',
+    vendorCode: 'SN',
+    isVerifiedVendor: true,
+    stockStatus: 'In Stock',
+    stockCount: 5,
+    rating: 5.0,
+    reviewCount: 29,
+    warranty: '2 Years Enterprise Warranty',
+    description: 'All-in-one 1U rackmount console featuring integrated 8-port PoE switch (6x PoE, 2x PoE+), 10G SFP+ WAN/LAN ports, 3.5" HDD bay for UniFi Protect, and 128GB SSD integrated storage.',
+    specs: [
+      { label: 'FORM FACTOR', value: '1U Rackmount Enclosure' },
+      { label: 'PORTS', value: '8x GbE RJ45 (6x PoE, 2x PoE+)' },
+      { label: 'UPLINKS', value: '1x 2.5G RJ45 WAN, 2x 10G SFP+ Ports' },
+      { label: 'IDS/IPS THROUGHPUT', value: '3.5 Gbps Threat Management' },
+      { label: 'STORAGE BAY', value: '1x 3.5" NVR Drive Bay + 128GB eMMC' },
+      { label: 'MANAGEMENT', value: 'UniFi Network, Protect, Access, Talk' }
+    ],
+    inBox: ['UDM-SE Unit', 'Rackmount Ears & Screws', 'AC Power Cord', 'Rubber Feet']
+  },
+  {
+    id: 'prod-8',
+    sku: 'NET-CIS-C9300-24P',
+    name: 'Cisco Catalyst 9300 24-Port PoE+ L3 Managed Switch',
+    category: 'Networking',
+    subCategory: 'Managed Switches',
+    priceNpr: 215000,
+    image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80',
+    vendorId: 'sn',
+    vendorName: 'Server Nepal',
+    vendorCode: 'SN',
+    isVerifiedVendor: true,
+    stockStatus: 'Low Stock',
+    stockCount: 3,
+    rating: 5.0,
+    reviewCount: 14,
+    warranty: 'Enhanced Limited Lifetime Warranty',
+    description: 'Enterprise stacking switch platform designed for security, IoT, mobility, and cloud with 480 Gbps stacking bandwidth and full 437W PoE+ budget.',
+    specs: [
+      { label: 'SWITCHING CAPACITY', value: '208 Gbps (480 Gbps Stackwise)' },
+      { label: 'POE BUDGET', value: '437W Full PoE+ (30W per port)' },
+      { label: 'STACKING', value: 'StackWise-480 Technology' },
+      { label: 'MAC TABLE', value: '32,000 Entries' },
+      { label: 'POWER SUPPLY', value: '715W AC Redundant Capable' },
+      { label: 'DRAM / FLASH', value: '8 GB DRAM / 16 GB Flash' }
+    ],
+    inBox: ['Cisco Catalyst 9300 Switch', 'Stacking Cable', 'Console Cable', 'Power Supply']
+  }
+];
+
+export const COMMUNITY_BUILDS: CommunityBuild[] = [
+  {
+    id: 'build-1',
+    title: 'Project Obsidian',
+    subtitle: '4K Gaming & Streaming Rig',
+    priceNpr: 245000,
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCjjFXBL-BugUZu09G5GYt4TWD-HOm50E3iCmc3-yD76AGMgJcKafPNWsVZZxZY15BCYdHDK9R5EbWT1FkbRO1XEgl5pCWUT3iK-YEJn9Te5gJHEttsd1fek5wt4xGl91fV2wFLqzdwT5VAE3htF7en1TcspZKetF0hB6Bl49MTQzrez0ttWVk9-XW5ub-QORvthJoov0E55V7yobTkhHCDAwMDMiD-GgFdlEFPIuWPFC1EMPOdYwuv',
+    builder: 'Aayush Shrestha (Kathmandu)',
+    category: 'Gaming & Streaming',
+    likes: 142,
+    description: 'Custom liquid-cooled stealth build featuring dual-chamber glass panel case, cable mod custom sleeves, and tuned DDR5 memory timings.',
+    partsList: [
+      { componentType: 'GPU', name: 'NVIDIA RTX 4080 Super 16GB OC', sku: 'GPU-RTX4080S-16G', priceNpr: 155000, vendorName: 'Neo Gear Tech' },
+      { componentType: 'CPU', name: 'AMD Ryzen 7 7800X3D 8-Core', sku: 'CPU-AMD-7800X3D', priceNpr: 54000, vendorName: 'Neo Gear Tech' },
+      { componentType: 'RAM', name: 'G.Skill Trident Z5 RGB 32GB (2x16) DDR5-6000', sku: 'RAM-GSK-32G-DDR5', priceNpr: 18500, vendorName: 'Kathmandu Techies' },
+      { componentType: 'Motherboard', name: 'MSI MAG B650 Tomahawk WiFi', sku: 'MB-MSI-B650-TOMA', priceNpr: 28500, vendorName: 'Neo Gear Tech' },
+      { componentType: 'Cooler', name: 'Lian Li Galahad II Trinity 360mm AIO', sku: 'CLR-LIAN-360', priceNpr: 21000, vendorName: 'Kathmandu Techies' }
+    ]
+  },
+  {
+    id: 'build-2',
+    title: 'Smart Agri-Sensor V2',
+    subtitle: 'ESP32 based soil monitoring node',
+    priceNpr: 12500,
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCVVx0tIjvm9HItIXqKWwX6Ys8O7V8B-o58WUcTNlj7naBqXyF_Fh4LSiLLq-y40ewapta0139PQmyTnM_aS3pV-mZqFosv23J6lwBxwFErwn3Cg7vPN3IIOG9tU5WXSMbTTHOjX35kr92mAaB8-Dhm8fs4eREKBCluX2Y-xC81SK5_Wl-B7oGTf4hmrntVeIP3CjiW0MURazb3Mo-39t7fYULaGMEavZnPjmTCOuPZscsyHIl6_LGD',
+    builder: 'Pulchowk Robotics Club',
+    category: 'IoT Node',
+    likes: 98,
+    description: 'Solar-powered remote agricultural node deployed in Chitwan farms. Measures NPK, soil moisture, pH, ambient temperature, and transmits via 868MHz LoRaWAN.',
+    partsList: [
+      { componentType: 'MCU', name: 'ESP32-S3-WROOM-1 Dev Board', sku: 'IOT-ESP32-S3-WROOM-2', priceNpr: 1450, vendorName: 'Circuit Emporium' },
+      { componentType: 'LoRa Module', name: 'Semtech SX1262 LoRa Node (868MHz)', sku: 'IOT-LORA-SX1262-868M', priceNpr: 2850, vendorName: 'Circuit Emporium' },
+      { componentType: 'Sensor', name: 'Capacitive Soil Moisture Probe V2', sku: 'SEN-SOIL-CAP-V2', priceNpr: 450, vendorName: 'Circuit Emporium' },
+      { componentType: 'Sensor', name: 'Modbus RS485 NPK Soil Sensor', sku: 'SEN-NPK-RS485', priceNpr: 5800, vendorName: 'Circuit Emporium' },
+      { componentType: 'Power', name: '5V 2W Solar Panel + LiFePO4 Battery Charger', sku: 'PWR-SOLAR-LIPO', priceNpr: 1950, vendorName: 'Circuit Emporium' }
+    ]
+  },
+  {
+    id: 'build-3',
+    title: 'Home Lab NAS',
+    subtitle: 'Quiet, low-power storage server',
+    priceNpr: 180000,
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxjKCn02Y2dUjSZrZm812kl08odtaF5m13CD7-UvsyaSXhJ_rLO62lLUTTmzTG6zo-9IXfHun7bgcEFvNVEpKVko4SXP3ikgClbbrzJgAAIu_bVi1OvhbSx9iojkKVIdvE1AQjHty6ibZfdeUVNE1Y136crAfTplf5cXN7CdxEQBrtPSi-5gzuEKImqwHaw-xFpQRCjmMBqrJQCZlbNpT0j5MENq8ixKEPGokx_MqpWNOEgLdlcJjX',
+    builder: 'Sujit Pokharel (Pokhara)',
+    category: 'Server / NAS',
+    likes: 115,
+    description: 'TrueNAS SCALE 8-bay rackmount server running Docker containers for Nextcloud, Plex, and automated backup pipelines across local tech firms.',
+    partsList: [
+      { componentType: 'Motherboard/CPU', name: 'Intel Xeon E-2336 6C/12T + Supermicro X12STH', sku: 'MB-SUPER-X12-XEON', priceNpr: 72000, vendorName: 'Server Nepal' },
+      { componentType: 'RAM', name: '32GB (2x16GB) DDR4 3200MHz ECC Unbuffered', sku: 'RAM-ECC-32G-3200', priceNpr: 22000, vendorName: 'Server Nepal' },
+      { componentType: 'Storage', name: '4x Seagate IronWolf Pro 8TB NAS HDD', sku: 'HDD-SEA-8TB-NAS', priceNpr: 68000, vendorName: 'Server Nepal' },
+      { componentType: 'Boot Cache', name: '2x Samsung 980 Pro 500GB PCIe 4.0 NVMe', sku: 'SSD-SAM-980P-500G', priceNpr: 18000, vendorName: 'Neo Gear Tech' }
+    ]
+  }
+];
