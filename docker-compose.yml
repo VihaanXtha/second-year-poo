@@ -1,0 +1,93 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - admin
+      - vendor
+      - backend
+    networks:
+      - circuit-bazaar
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api.localhost
+    expose:
+      - "3000"
+    networks:
+      - circuit-bazaar
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    expose:
+      - "3001"
+    environment:
+      - VITE_API_URL=http://api.localhost
+    networks:
+      - circuit-bazaar
+
+  vendor:
+    build:
+      context: ./vendor
+      dockerfile: Dockerfile
+    expose:
+      - "3002"
+    environment:
+      - VITE_API_URL=http://api.localhost
+    networks:
+      - circuit-bazaar
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    volumes:
+      - ./backend/storage:/app/storage
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=circuit_bazaar
+      - DB_USERNAME=circuit
+      - DB_PASSWORD=circuit
+      - MAIL_FROM_ADDRESS=noreply@circuitbazaar.com
+      - MAIL_FROM_NAME="Circuit Bazaar"
+    depends_on:
+      - mysql
+    networks:
+      - circuit-bazaar
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=circuit_bazaar
+      - MYSQL_USER=circuit
+      - MYSQL_PASSWORD=circuit
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - circuit-bazaar
+
+volumes:
+  mysql_data:
+
+networks:
+  circuit-bazaar:
+    driver: bridge

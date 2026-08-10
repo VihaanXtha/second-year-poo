@@ -1,8 +1,38 @@
+# Dependencies
 node_modules/
-build/
+vendor/
+backend/vendor/
+
+# Build outputs
 dist/
-coverage/
+.next/
+out/
+
+# Environment
+.env
+.env.backup
+.env.production
+
+# IDE
+.idea/
+.vscode/
+.nova/
+.cursor/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
 *.log
-.env*
-!.env.example
+npm-debug.log*
+
+# Storage
+backend/storage/*.key
+backend/public/storage
+backend/storage/pail
+
+# Cache
+.cache/
+.phpunit.result.cache
+.phpunit.cache
