@@ -59,6 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const userData: User = data.user;
     setUser(userData);
     localStorage.setItem('circuit-bazaar-auth', JSON.stringify(userData));
+    if (data.token) {
+      localStorage.setItem('circuit-bazaar-token', data.token);
+    }
   }, []);
 
   const signup = useCallback(async (name: string, email: string, password: string) => {
@@ -97,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
     localStorage.removeItem('circuit-bazaar-auth');
+    localStorage.removeItem('circuit-bazaar-token');
   }, []);
 
   if (loading) {

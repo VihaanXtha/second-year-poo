@@ -67,6 +67,15 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        if ($user->email_verified_at) {
+            return response()->json(['message' => 'Email is already verified.'], 422);
+        }
+
         $otp = OtpCode::where('email', $request->email)
             ->where('type', 'email_verification')
             ->where('verified_at', null)
@@ -79,11 +88,7 @@ class AuthController extends Controller
         }
 
         $otp->update(['verified_at' => Carbon::now()]);
-
-        $user = User::where('email', $request->email)->first();
-        if ($user) {
-            $user->update(['email_verified_at' => Carbon::now()]);
-        }
+        $user->update(['email_verified_at' => Carbon::now()]);
 
         return response()->json(['message' => 'Email verified successfully.']);
     }

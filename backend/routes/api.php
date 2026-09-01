@@ -9,14 +9,18 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReviewController;
 
 // Public routes
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/verify-email-otp', [AuthController::class, 'verifyEmailOtp']);
-Route::post('/auth/resend-otp', [AuthController::class, 'resendOtp']);
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/vendor-login', [AuthController::class, 'vendorLogin']);
-Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
-Route::post('/auth/check-email', [AuthController::class, 'checkEmail']);
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok', 'service' => 'circuit-bazaar-api', 'time' => now()->toIso8601String()]);
+});
+
+Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+Route::post('/auth/verify-email-otp', [AuthController::class, 'verifyEmailOtp'])->middleware('throttle:10,1');
+Route::post('/auth/resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:5,1');
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/auth/vendor-login', [AuthController::class, 'vendorLogin'])->middleware('throttle:10,1');
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
+Route::post('/auth/check-email', [AuthController::class, 'checkEmail'])->middleware('throttle:30,1');
 
 // Public product browsing
 Route::get('/products', [ProductController::class, 'index']);

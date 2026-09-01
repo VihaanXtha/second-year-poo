@@ -27,8 +27,7 @@ php artisan migrate --force
 
 # Run seeders
 echo "Seeding database..."
-php artisan db:seed --class=AdminUserSeeder --force
-php artisan db:seed --class=VendorUserSeeder --force
+php artisan db:seed --force
 
 # Start the server
 echo "Starting server..."
