@@ -253,6 +253,75 @@ class AuthController extends Controller
         ]);
     }
 
+    public function vendorLogin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Email not found.'], 404);
+        }
+
+        if ($user->role !== 'vendor') {
+            return response()->json(['message' => 'Access denied. This portal is for vendors only.'], 403);
+        }
+
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Invalid password.'], 401);
+        }
+
+        if ($user->status === 'banned') {
+            return response()->json(['message' => 'Your account has been banned.'], 403);
+        }
+
+        // Only verified vendors can login
+        $store = \App\Models\VendorStore::where('user_id', $user->id)->first();
+
+        if (!$store) {
+            return response()->json(['message' => 'No vendor store found. Please register your store first.'], 403);
+        }
+
+        if (!$store->verified || $store->status !== 'active') {
+            return response()->json([
+                'message' => 'Your vendor account is pending verification. Please wait for the admin to verify your store before logging in.',
+                'verified' => (bool) $store->verified,
+                'store_status' => $store->status,
+            ], 403);
+        }
+
+        $token = $user->createToken('vendor_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Vendor login successful.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'address' => $user->address,
+                'city' => $user->city,
+                'postal_code' => $user->postal_code,
+                'country' => $user->country,
+                'email_verified' => !is_null($user->email_verified_at),
+            ],
+            'store' => [
+                'id' => $store->id,
+                'store_name' => $store->store_name,
+                'verified' => (bool) $store->verified,
+                'status' => $store->status,
+            ],
+            'token' => $token,
+        ]);
+    }
+
     public function forgotPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [

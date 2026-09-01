@@ -54,6 +54,12 @@ class AdminController extends Controller
 
         $users = $query->latest()->paginate(15);
 
+        // Return full user details (password is hidden by the model's Hidden attribute)
+        $users->getCollection()->transform(function ($user) {
+            $user->makeVisible(['address', 'city', 'postal_code', 'country', 'phone', 'phone_verified_at', 'email_verified_at', 'created_at', 'updated_at']);
+            return $user;
+        });
+
         return response()->json($users);
     }
 

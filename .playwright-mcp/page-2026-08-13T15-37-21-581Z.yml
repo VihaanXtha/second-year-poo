@@ -1,0 +1,12 @@
+- generic [ref=e5]:
+  - generic [ref=e6]:
+    - heading "Admin Portal" [level=1] [ref=e7]
+    - paragraph [ref=e8]: Circuit Bazaar Administration
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e11]: Email
+      - textbox "admin@circuitbazaar.com" [ref=e16]
+    - generic [ref=e17]:
+      - generic [ref=e18]: Password
+      - textbox "••••••••" [ref=e23]
+    - button "Sign In" [ref=e24]

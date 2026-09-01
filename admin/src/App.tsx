@@ -18,7 +18,7 @@ export default function App() {
 
   const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     const token = getAdminToken();
-    const res = await fetch(`${getApiUrl()}${endpoint}`, {
+    const res = await fetch(`${getApiUrl()}/api${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
