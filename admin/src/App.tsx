@@ -4,8 +4,10 @@ import { Header } from './components/Header';
 import { Dashboard } from './pages/Dashboard';
 import { Analytics } from './pages/Analytics';
 import { UsersPage } from './pages/UsersPage';
+import { VendorsPage } from './pages/VendorsPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { OrdersPage } from './pages/OrdersPage';
+import { SalesReports } from './pages/SalesReports';
 import { Login } from './pages/Login';
 import { useAdminAuth } from './context/AuthContext';
 import { getAdminToken, getApiUrl } from './context/AuthContext';
@@ -22,7 +24,7 @@ export default function App() {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         ...options.headers,
       },
     });
@@ -42,6 +44,20 @@ export default function App() {
     return <Login />;
   }
 
+  const getTitle = () => {
+    const titles: Record<string, string> = {
+      dashboard: 'Dashboard',
+      analytics: 'Analytics',
+      users: 'Users',
+      vendors: 'Vendors',
+      products: 'Products',
+      orders: 'Orders',
+      sales: 'Sales Reports',
+      settings: 'Settings',
+    };
+    return titles[activeNav] || 'Dashboard';
+  };
+
   const renderPage = () => {
     switch (activeNav) {
       case 'dashboard':
@@ -50,16 +66,20 @@ export default function App() {
         return <Analytics apiFetch={apiFetch} />;
       case 'users':
         return <UsersPage apiFetch={apiFetch} />;
+      case 'vendors':
+        return <VendorsPage apiFetch={apiFetch} />;
       case 'products':
         return <ProductsPage apiFetch={apiFetch} />;
       case 'orders':
         return <OrdersPage apiFetch={apiFetch} />;
+      case 'sales':
+        return <SalesReports apiFetch={apiFetch} />;
       case 'settings':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Settings</h2>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center">
-              <p className="text-slate-400">Settings panel coming soon.</p>
+            <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+              <p className="text-slate-500">Settings panel coming soon.</p>
             </div>
           </div>
         );
@@ -69,7 +89,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden font-sans">
       <Sidebar
         activeNav={activeNav}
         setActiveNav={setActiveNav}
@@ -77,11 +97,15 @@ export default function App() {
         setCollapsed={setCollapsed}
       />
 
-      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
-        <Header collapsed={collapsed} setCollapsed={setCollapsed} />
+      <div
+        className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
+          collapsed ? 'ml-16' : 'ml-64'
+        }`}
+      >
+        <Header collapsed={collapsed} setCollapsed={setCollapsed} title={getTitle()} />
 
-        <main className="flex-1 overflow-y-auto bg-slate-950">
-          <div className="p-6">
+        <main className="flex-1 overflow-y-auto bg-slate-50">
+          <div className="p-6 max-w-[1600px] mx-auto">
             {renderPage()}
           </div>
         </main>

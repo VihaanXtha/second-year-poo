@@ -1,106 +1,169 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { CategoryChart } from '../components/CategoryChart';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { ApiFetch } from '../App';
+import {
+  Card,
+  EmptyState,
+  ErrorBanner,
+  PageHeader,
+  SelectField,
+  Spinner,
+  TextField,
+} from '../components/UI';
+import { CategoryChart, OrdersChart, RevenueChart } from '../components/Charts';
+import type { SalesDataPoint } from '../types';
 
-interface ApiFetch {
-  (endpoint: string, options?: RequestInit): Promise<any>;
+interface AnalyticsProps {
+  apiFetch: ApiFetch;
 }
 
-interface SalesData {
-  day: string;
-  sales: number;
-  orders: number;
-}
-
-export const Analytics: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
-  const [sales, setSales] = useState<SalesData[]>([]);
+export function Analytics({ apiFetch }: AnalyticsProps) {
+  const [range, setRange] = useState('30');
+  const [search, setSearch] = useState('');
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await apiFetch('/vendor/sales?period=weekly');
-        setSales((data.sales || []).map((s: any) => ({ day: s.date || `${s.month}/${s.year}`, sales: s.revenue, orders: s.orders })));
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [apiFetch]);
-
-  if (loading) {
-    return <div className="text-slate-400">Loading analytics...</div>;
-  }
-
-  const monthlyData = sales.map(d => ({ day: d.day, sales: d.sales, orders: d.orders }));
-  const pieData = [
-    { name: 'PC Components', value: 85, color: '#dc2626' },
-    { name: 'IoT Gear', value: 34, color: '#38bdf8' },
-    { name: 'Networking', value: 22, color: '#10b981' },
-    { name: 'Laptops', value: 15, color: '#f59e0b' },
-  ];
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-[#1e293b] border border-[#33415b] rounded-lg px-3 py-2 shadow-xl">
-          <p className="text-xs font-mono text-slate-400">{label}</p>
-          <p className="text-sm font-bold text-white mt-1">Rs. {payload[0].value}</p>
-          <p className="text-xs text-slate-400">{payload[1].value} orders</p>
-        </div>
-      );
+  const load = async (days: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const raw = await apiFetch<any>(`/vendor/sales?days=${days}`);
+      const d: any = raw?.data ?? raw ?? {};
+      setData({
+        by_day: (d.by_day || d.series || d.daily || []) as SalesDataPoint[],
+        by_category: (d.by_category || d.categories || []) as { name: string; value: number }[],
+        top_products: (d.top_products || d.products || []) as any[],
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load analytics');
+    } finally {
+      setLoading(false);
     }
-    return null;
   };
 
+  useEffect(() => {
+    load(range);
+  }, [range]);
+
+  const filteredProducts = useMemo(() => {
+    const list = data?.top_products || [];
+    if (!search) return list;
+    return list.filter((p: any) => (p.name || '').toLowerCase().includes(search.toLowerCase()));
+  }, [data, search]);
+
   return (
-    <div className="space-y-8">
-      <h2 className="text-2xl font-bold text-white">Analytics</h2>
+    <div>
+      <PageHeader
+        title="Analytics"
+        description="Deep dive into your store performance and product trends."
+      />
 
-      <div className="rounded-2xl border border-[#1e293b] bg-[#0f172a] p-6 shadow-lg">
-        <h3 className="text-sm uppercase tracking-[0.2em] text-slate-500 font-mono mb-5">
-          Sales & Orders
-        </h3>
-        <ResponsiveContainer width="100%" height={320}>
-          <BarChart data={monthlyData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
-            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ color: '#94a3b8', fontSize: '12px' }} />
-            <Bar dataKey="sales" fill="#dc2626" radius={[4, 4, 0, 0]} name="Sales (Rs.)" />
-            <Bar dataKey="orders" fill="#38bdf8" radius={[4, 4, 0, 0]} name="Orders" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {error && <div className="mb-4"><ErrorBanner message={error} /></div>}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <CategoryChart data={pieData} />
-
-        <div className="rounded-2xl border border-[#1e293b] bg-[#0f172a] p-6 shadow-lg">
-          <h3 className="text-sm uppercase tracking-[0.2em] text-slate-500 font-mono mb-5">
-            Key Metrics
-          </h3>
-          <div className="grid grid-cols-2 gap-5">
-            {[
-              { label: 'Avg Order Value', value: 'Rs. 245', change: '+5.3%' },
-              { label: 'Customer Retention', value: '78.4%', change: '+2.1%' },
-              { label: 'New Customers', value: '1,428', change: '+12.5%' },
-              { label: 'Return Rate', value: '3.2%', change: '-1.8%' },
-            ].map((item) => (
-              <div key={item.label} className="bg-[#1e293b]/30 border border-[#1e293b] rounded-xl p-4">
-                <p className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">
-                  {item.label}
-                </p>
-                <p className="text-2xl font-bold text-white font-mono">{item.value}</p>
-                <p className="text-xs text-green-400 font-mono mt-1">{item.change}</p>
-              </div>
-            ))}
-          </div>
+      <Card className="mb-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <SelectField
+            label="Date range"
+            value={range}
+            onChange={setRange}
+            options={[
+              { value: '7', label: 'Last 7 days' },
+              { value: '14', label: 'Last 14 days' },
+              { value: '30', label: 'Last 30 days' },
+              { value: '90', label: 'Last 90 days' },
+            ]}
+          />
         </div>
-      </div>
+      </Card>
+
+      {loading ? (
+        <div className="flex h-64 items-center justify-center">
+          <Spinner size="lg" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card title="Revenue trend" subtitle="Cumulative revenue per day">
+              {data?.by_day && data.by_day.length > 0 ? (
+                <RevenueChart data={data.by_day} />
+              ) : (
+                <EmptyState
+                  icon="show_chart"
+                  title="No revenue data"
+                  description="Charts will populate once orders are placed."
+                />
+              )}
+            </Card>
+
+            <Card title="Orders per day" subtitle="Daily order count">
+              {data?.by_day && data.by_day.length > 0 ? (
+                <OrdersChart data={data.by_day.map((d) => ({ date: d.date, orders: d.orders }))} />
+              ) : (
+                <EmptyState
+                  icon="bar_chart"
+                  title="No order data"
+                  description="Order counts will appear here."
+                />
+              )}
+            </Card>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <Card title="Sales by category" subtitle="Distribution of sales">
+              {data?.by_category && data.by_category.length > 0 ? (
+                <CategoryChart data={data.by_category} />
+              ) : (
+                <EmptyState
+                  icon="donut_small"
+                  title="No category data"
+                  description="Category mix will appear after sales."
+                />
+              )}
+            </Card>
+
+            <Card className="lg:col-span-2" title="Top products" subtitle="Best sellers in the selected range">
+              <div className="mb-3">
+                <TextField
+                  label="Filter products"
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Search by product name"
+                />
+              </div>
+              {filteredProducts.length === 0 ? (
+                <EmptyState
+                  icon="inventory_2"
+                  title="No product data"
+                  description="Top selling products will appear here."
+                />
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="text-xs uppercase tracking-wider text-slate-400">
+                        <th className="pb-3 font-semibold">Product</th>
+                        <th className="pb-3 text-right font-semibold">Sold</th>
+                        <th className="pb-3 text-right font-semibold">Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredProducts.map((p: any) => (
+                        <tr key={p.id || p.name} className="text-slate-700">
+                          <td className="py-3 font-semibold text-slate-900">{p.name}</td>
+                          <td className="py-3 text-right">{p.sold ?? p.quantity ?? '—'}</td>
+                          <td className="py-3 text-right font-semibold">
+                            ${Number(p.revenue ?? p.total ?? 0).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
-};
+}

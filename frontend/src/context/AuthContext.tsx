@@ -23,7 +23,7 @@ interface AuthContextType {
   loading: boolean;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backendcircuit-production.up.railway.app/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

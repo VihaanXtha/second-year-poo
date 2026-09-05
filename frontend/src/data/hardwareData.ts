@@ -291,6 +291,62 @@ export const PRODUCTS: Product[] = [
       { label: 'DRAM / FLASH', value: '8 GB DRAM / 16 GB Flash' }
     ],
     inBox: ['Cisco Catalyst 9300 Switch', 'Stacking Cable', 'Console Cable', 'Power Supply']
+  },
+  {
+    id: 'prod-9',
+    sku: 'RAM-GSK-32G-DDR5-6000',
+    name: 'G.Skill Trident Z5 Neo RGB 32GB (2x16GB) DDR5-6000 CL30',
+    category: 'PC Components',
+    subCategory: 'Memory',
+    priceNpr: 18500,
+    image: 'https://images.unsplash.com/photo-1562976540-1502c2145186?auto=format&fit=crop&w=600&q=80',
+    vendorId: 'kt',
+    vendorName: 'Kathmandu Techies',
+    vendorCode: 'KT',
+    isVerifiedVendor: true,
+    stockStatus: 'In Stock',
+    stockCount: 18,
+    rating: 4.9,
+    reviewCount: 56,
+    warranty: 'Limited Lifetime Warranty',
+    description: 'Premium overclocked DDR5 memory kit engineered for AMD EXPO and Intel XMP 3.0 profiles. Tight CL30 timings tuned for Ryzen 7000/9000 series gaming.',
+    specs: [
+      { label: 'CAPACITY', value: '32GB (2 x 16GB)' },
+      { label: 'SPEED', value: 'DDR5-6000 MT/s' },
+      { label: 'LATENCY', value: 'CL30-38-38-96' },
+      { label: 'VOLTAGE', value: '1.35V' },
+      { label: 'PROFILE', value: 'AMD EXPO + Intel XMP 3.0' },
+      { label: 'RGB', value: 'Addressable RGB Lighting' }
+    ],
+    inBox: ['2x DDR5 Modules', 'G.Skill Case Badge', 'Installation Guide']
+  },
+  {
+    id: 'prod-10',
+    sku: 'SSD-SAM-990PRO-2TB',
+    name: 'Samsung 990 PRO 2TB PCIe 4.0 NVMe M.2 SSD',
+    category: 'PC Components',
+    subCategory: 'Storage',
+    priceNpr: 27500,
+    image: 'https://images.unsplash.com/photo-1597872200969-0bce409801d8?auto=format&fit=crop&w=600&q=80',
+    vendorId: 'ng',
+    vendorName: 'Neo Gear Tech',
+    vendorCode: 'NG',
+    isVerifiedVendor: true,
+    stockStatus: 'In Stock',
+    stockCount: 22,
+    rating: 4.95,
+    reviewCount: 72,
+    warranty: '5 Years Limited Warranty',
+    description: 'Top-tier PCIe 4.0 x4 NVMe SSD with Samsung V-NAND 3-bit MLC and proprietary Elpis controller, optimized for sustained workloads and gaming load times.',
+    specs: [
+      { label: 'CAPACITY', value: '2 TB' },
+      { label: 'INTERFACE', value: 'PCIe Gen4 x4 NVMe 1.4' },
+      { label: 'SEQ READ', value: '7,450 MB/s' },
+      { label: 'SEQ WRITE', value: '6,900 MB/s' },
+      { label: 'RANDOM READ', value: '1,400K IOPS' },
+      { label: 'ENDURANCE', value: '1,550 TBW' }
+    ],
+    inBox: ['Samsung 990 PRO SSD', 'Heatsink-Compatible Label']
   }
 ];
 

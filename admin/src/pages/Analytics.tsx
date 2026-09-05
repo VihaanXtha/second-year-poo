@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { CategoryChart } from '../components/CategoryChart';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts';
 
 interface ApiFetch {
   (endpoint: string, options?: RequestInit): Promise<any>;
 }
+
+const COLORS = ['#dc2626', '#38bdf8', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 export const Analytics: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
   const [sales, setSales] = useState<any[]>([]);
@@ -30,69 +43,97 @@ export const Analytics: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
   }, [apiFetch]);
 
   if (loading) {
-    return <div className="text-slate-400">Loading analytics...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
-  const monthlyData = sales.map((d: any) => ({ month: `${d.month}/${d.year}`, revenue: d.revenue, orders: d.orders }));
-  const pieData = categories.map((c: any) => ({ name: c.name, value: 0, color: '#dc2626' }));
+  const monthlyData = sales.map((d: any) => ({
+    month: `${d.month}/${d.year}`,
+    revenue: d.revenue,
+    orders: d.orders,
+  }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 shadow-xl">
-          <p className="text-xs font-mono text-slate-400">{label}</p>
-          <p className="text-sm font-bold text-white mt-1">Rs. {payload[0].value}</p>
-          <p className="text-xs text-slate-400">{payload[1].value} orders</p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const pieData = categories.map((c: any) => ({
+    name: c.name,
+    value: c.products_count || 0,
+    color: COLORS[categories.indexOf(c) % COLORS.length],
+  }));
 
   return (
-    <div className="space-y-8">
-      <h2 className="text-2xl font-bold text-white">Analytics</h2>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-5">
+            Monthly Revenue & Orders
+          </h3>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={monthlyData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                formatter={(value: any) => [`Rs. ${value.toLocaleString()}`, '']}
+              />
+              <Legend wrapperStyle={{ color: '#64748b', fontSize: '12px' }} />
+              <Bar dataKey="revenue" fill="#dc2626" radius={[4, 4, 0, 0]} name="Revenue (Rs.)" />
+              <Bar dataKey="orders" fill="#38bdf8" radius={[4, 4, 0, 0]} name="Orders" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
-        <h3 className="text-sm uppercase tracking-[0.2em] text-slate-500 font-mono mb-5">
-          Monthly Revenue & Orders
-        </h3>
-        <ResponsiveContainer width="100%" height={320}>
-          <BarChart data={monthlyData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
-            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ color: '#94a3b8', fontSize: '12px' }} />
-            <Bar dataKey="revenue" fill="#dc2626" radius={[4, 4, 0, 0]} name="Revenue (Rs.)" />
-            <Bar dataKey="orders" fill="#38bdf8" radius={[4, 4, 0, 0]} name="Orders" />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-5">
+            Category Distribution
+          </h3>
+          <ResponsiveContainer width="100%" height={320}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                labelLine={{ stroke: '#94a3b8' }}
+              >
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <CategoryChart data={pieData} />
-
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
-          <h3 className="text-sm uppercase tracking-[0.2em] text-slate-500 font-mono mb-5">
-            Key Metrics
-          </h3>
-          <div className="grid grid-cols-2 gap-5">
-            {[
-              { label: 'Avg Order Value', value: 'Rs. 245', change: '+5.3%' },
-              { label: 'Customer Retention', value: '78.4%', change: '+2.1%' },
-              { label: 'New Customers', value: '1,428', change: '+12.5%' },
-              { label: 'Return Rate', value: '3.2%', change: '-1.8%' },
-            ].map((item) => (
-              <div key={item.label} className="bg-slate-800/30 border border-slate-800 rounded-xl p-4">
-                <p className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">
-                  {item.label}
-                </p>
-                <p className="text-2xl font-bold text-white font-mono">{item.value}</p>
-                <p className="text-xs text-green-400 font-mono mt-1">{item.change}</p>
-              </div>
-            ))}
-          </div>
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-5">
+          Key Metrics
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+          {[
+            { label: 'Avg Order Value', value: 'Rs. 245', change: '+5.3%', trend: 'up' as const },
+            { label: 'Customer Retention', value: '78.4%', change: '+2.1%', trend: 'up' as const },
+            { label: 'New Customers', value: '1,428', change: '+12.5%', trend: 'up' as const },
+            { label: 'Return Rate', value: '3.2%', change: '-1.8%', trend: 'down' as const },
+          ].map((item) => (
+            <div key={item.label} className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                {item.label}
+              </p>
+              <p className="text-2xl font-bold text-slate-900 font-mono">{item.value}</p>
+              <p className={`text-xs font-semibold mt-1 ${item.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                {item.change}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -1,76 +1,70 @@
 import React from 'react';
-import { Search, Bell, Moon, Sun, Plus, LogOut } from 'lucide-react';
 import { useVendorAuth } from '../context/AuthContext';
+import { navItems } from '../data/mockData';
 
 interface HeaderProps {
   collapsed: boolean;
-  setCollapsed: (val: boolean) => void;
+  setCollapsed: (v: boolean) => void;
+  activeNav: string;
 }
 
-export const Header: React.FC<HeaderProps> = ({ collapsed, setCollapsed }) => {
-  const [darkMode, setDarkMode] = React.useState(true);
-  const { user, logout } = useVendorAuth();
+export function Header({ collapsed, setCollapsed, activeNav }: HeaderProps) {
+  const { user, store } = useVendorAuth();
+  const current = navItems.find((n) => n.id === activeNav);
+  const initials = (user?.name || 'V')
+    .split(' ')
+    .map((p) => p.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join('');
 
   return (
-    <header className="border-b border-[#1e293b] bg-[#0f172a] px-6 py-3 flex items-center justify-between h-16">
-      <div className="flex items-center gap-4">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-8">
+      <div className="flex items-center gap-3">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="text-slate-400 hover:text-slate-200 transition-colors p-1"
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden"
+          aria-label="Toggle sidebar"
         >
-          <span className="material-symbols-outlined text-[18px]">
-            {collapsed ? 'menu' : 'menu_open'}
-          </span>
+          <span className="material-symbols-outlined">menu</span>
         </button>
-        <h1 className="text-xl font-bold text-white font-mono">Dashboard</h1>
+        <div>
+          <div className="text-xs font-medium uppercase tracking-wider text-slate-400">
+            {store?.store_name || 'Circuit Bazaar'}
+          </div>
+          <h1 className="text-lg font-bold text-slate-900">
+            {current?.label || 'Dashboard'}
+          </h1>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+      <div className="flex items-center gap-3">
+        <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-500 md:flex">
+          <span className="material-symbols-outlined text-lg">search</span>
           <input
-            type="text"
-            placeholder="Search orders, products..."
-            className="bg-[#1e293b] border border-[#33415b] rounded-xl pl-9 pr-4 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#dc2626] transition-colors w-64"
+            type="search"
+            placeholder="Quick search..."
+            className="w-40 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
           />
         </div>
 
-        <button className="px-3 py-1.5 bg-[#dc2626] text-white rounded-xl text-sm font-mono font-bold hover:bg-[#b91c1c] transition-colors flex items-center gap-1.5 cursor-pointer">
-          <Plus className="w-4 h-4" />
-          Add
-        </button>
-
         <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="text-slate-400 hover:text-slate-200 transition-colors p-2 border border-[#1e293b] rounded-lg"
-          title={darkMode ? "Light mode" : "Dark mode"}
+          className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100"
+          aria-label="Notifications"
         >
-          {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          <span className="material-symbols-outlined">notifications</span>
+          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-600" />
         </button>
 
-        <button
-          className="text-slate-400 hover:text-slate-200 transition-colors p-2 border border-[#1e293b] rounded-lg relative"
-          title="Notifications"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#dc2626] rounded-full"></span>
-        </button>
-
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-[#dc2626] flex items-center justify-center text-white text-[10px] font-bold">
-            {user?.name?.charAt(0).toUpperCase() || 'V'}
+        <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">
+            {initials}
           </div>
-          <span className="text-sm text-slate-300 hidden lg:block">{user?.name}</span>
-          <button
-            onClick={logout}
-            className="text-slate-400 hover:text-red-400 transition-colors p-1"
-            title="Logout"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          <div className="hidden text-left leading-tight md:block">
+            <div className="text-sm font-semibold text-slate-900">{user?.name || 'Vendor'}</div>
+            <div className="text-[11px] text-slate-500">{user?.email}</div>
+          </div>
         </div>
       </div>
     </header>
   );
-};
+}
