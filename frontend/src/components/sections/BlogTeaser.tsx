@@ -67,18 +67,18 @@ export default function BlogTeaser() {
                 </div>
                 <div className="p-6">
                   <span className="inline-block rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-600">
-                    Guide
+                    {post.category || 'Guide'}
                   </span>
                   <h3 className="mt-3 text-lg font-semibold text-slate-900 group-hover:text-red-600 transition-colors">
                     {post.title}
                   </h3>
                   <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                    {post.excerpt || post.body.slice(0, 120)}
+                    {post.body ? post.body.slice(0, 120) : ''}
                   </p>
                   <div className="mt-4 flex items-center gap-3 text-xs text-slate-500">
                     <span>{post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}</span>
                     <span className="h-1 w-1 rounded-full bg-slate-300" />
-                    <span>{post.published_at ? `${Math.ceil((post.body.length - 120) / 200)} min read` : ''}</span>
+                    <span>{post.published_at && post.body ? `${Math.max(1, Math.ceil((post.body.length - 120) / 200))} min read` : ''}</span>
                   </div>
                 </div>
               </article>

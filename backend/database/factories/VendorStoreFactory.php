@@ -11,7 +11,7 @@ class VendorStoreFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'store_name' => fake()->company() . ' Store',
+            'store_name' => fake()->company().' Store',
             'description' => fake()->sentence(),
             'status' => 'active',
             'verified' => true,

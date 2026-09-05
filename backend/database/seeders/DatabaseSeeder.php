@@ -3,10 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Category;
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,6 +18,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AdminUserSeeder::class,
             VendorUserSeeder::class,
+            BlogPostSeeder::class,
+            JobPostingSeeder::class,
+            TestimonialSeeder::class,
         ]);
 
         $categories = [

@@ -15,7 +15,7 @@ class CloudinaryService
         $this->client = new Cloudinary([
             'cloud' => [
                 'cloud_name' => config('cloudinary.cloud_name'),
-                'api_key'    => config('cloudinary.api_key'),
+                'api_key' => config('cloudinary.api_key'),
                 'api_secret' => config('cloudinary.api_secret'),
             ],
         ]);
@@ -28,17 +28,39 @@ class CloudinaryService
                 'folder' => $folder,
                 'resource_type' => 'image',
                 'allowed_formats' => ['jpg', 'jpeg', 'png', 'webp'],
-                'transformation' => [
-                    ['quality' => 'auto'],
-                    ['fetch_format' => 'auto'],
-                ],
             ]);
 
             return $result['secure_url'] ?? null;
         } catch (MediaApiException $e) {
-            \Log::error('Cloudinary upload failed: ' . $e->getMessage());
+            \Log::error('Cloudinary upload failed: '.$e->getMessage());
 
             return null;
         }
+    }
+
+    public function uploadRaw(UploadedFile $file, ?string $folder = 'circuit-bazaar/cvs'): ?string
+    {
+        try {
+            $result = $this->client->uploadApi()->upload($file->getRealPath(), [
+                'folder' => $folder,
+                'resource_type' => 'raw',
+                'allowed_formats' => ['pdf'],
+            ]);
+
+            return $result['secure_url'] ?? null;
+        } catch (MediaApiException $e) {
+            \Log::error('Cloudinary raw upload failed: '.$e->getMessage());
+
+            return null;
+        }
+    }
+
+    public function deliveryUrl(string $url, int $width = 1200, int|string $quality = 'auto', string $format = 'auto'): string
+    {
+        return str_replace(
+            '/upload/',
+            '/upload/c_limit,w_'.$width.',q_'.$quality.',f_'.$format.'/',
+            $url
+        );
     }
 }

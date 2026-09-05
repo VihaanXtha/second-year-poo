@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { NepalAddressPicker, AddressValue } from "@/components/NepalAddressPicker";
 import Link from "next/link";
 
 export default function RegisterPage() {
@@ -10,6 +11,14 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [address, setAddress] = useState<AddressValue>({
+    country: "Nepal",
+    province: "",
+    district: "",
+    municipality: "",
+    ward: "",
+    postal_code: "",
+  });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -34,13 +43,17 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await signup(name, email, password);
+      await signup(name, email, password, address);
       router.push(redirect);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddressChange = (value: AddressValue) => {
+    setAddress(value);
   };
 
   const handleGoogle = () => {
@@ -127,6 +140,14 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:border-red-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+              <NepalAddressPicker
+                value={address}
+                onChange={handleAddressChange}
               />
             </div>
 

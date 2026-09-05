@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\OtpCode;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
+use App\Models\OtpCode;
+use App\Models\User;
+use App\Models\VendorStore;
 use App\Services\SmsService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -68,7 +68,7 @@ class AuthController extends Controller
         }
 
         $user = User::where('email', $request->email)->first();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
         }
 
@@ -83,7 +83,7 @@ class AuthController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        if (!$otp || $otp->code !== $request->code) {
+        if (! $otp || $otp->code !== $request->code) {
             return response()->json(['message' => 'Invalid or expired OTP code.'], 422);
         }
 
@@ -105,7 +105,7 @@ class AuthController extends Controller
 
         $user = User::findOrFail($request->user_id);
 
-        if (!$user->phone) {
+        if (! $user->phone) {
             return response()->json(['message' => 'Phone number not provided.'], 422);
         }
 
@@ -119,10 +119,10 @@ class AuthController extends Controller
             'expires_at' => Carbon::now()->addMinutes(10),
         ]);
 
-        $sms = new SmsService();
+        $sms = new SmsService;
         $sent = $sms->sendOtp($user->phone, $code);
 
-        if (!$sent) {
+        if (! $sent) {
             return response()->json([
                 'message' => 'OTP generated but SMS delivery failed. Please try again.',
                 'phone' => $this->maskPhone($user->phone),
@@ -157,7 +157,7 @@ class AuthController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        if (!$otp || $otp->code !== $request->code) {
+        if (! $otp || $otp->code !== $request->code) {
             return response()->json(['message' => 'Invalid or expired OTP code.'], 422);
         }
 
@@ -180,12 +180,13 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
         }
 
         if ($request->type === 'email_verification') {
             $this->generateAndSendOtp($user->email, null, 'email_verification');
+
             return response()->json(['message' => 'OTP sent to your email.']);
         }
 
@@ -208,6 +209,7 @@ class AuthController extends Controller
 
         if ($request->type === 'password_reset') {
             $this->generateAndSendOtp($user->email, $user->id, 'password_reset');
+
             return response()->json(['message' => 'Password reset OTP sent to your email.']);
         }
 
@@ -227,11 +229,11 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Email not found.'], 404);
         }
 
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Invalid password.'], 401);
         }
 
@@ -252,7 +254,7 @@ class AuthController extends Controller
                 'city' => $user->city,
                 'postal_code' => $user->postal_code,
                 'country' => $user->country,
-                'email_verified' => !is_null($user->email_verified_at),
+                'email_verified' => ! is_null($user->email_verified_at),
             ],
             'token' => $token,
         ]);
@@ -271,7 +273,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Email not found.'], 404);
         }
 
@@ -279,7 +281,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Access denied. This portal is for vendors only.'], 403);
         }
 
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Invalid password.'], 401);
         }
 
@@ -288,13 +290,13 @@ class AuthController extends Controller
         }
 
         // Only verified vendors can login
-        $store = \App\Models\VendorStore::where('user_id', $user->id)->first();
+        $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return response()->json(['message' => 'No vendor store found. Please register your store first.'], 403);
         }
 
-        if (!$store->verified || $store->status !== 'active') {
+        if (! $store->verified || $store->status !== 'active') {
             return response()->json([
                 'message' => 'Your vendor account is pending verification. Please wait for the admin to verify your store before logging in.',
                 'verified' => (bool) $store->verified,
@@ -315,7 +317,7 @@ class AuthController extends Controller
                 'city' => $user->city,
                 'postal_code' => $user->postal_code,
                 'country' => $user->country,
-                'email_verified' => !is_null($user->email_verified_at),
+                'email_verified' => ! is_null($user->email_verified_at),
             ],
             'store' => [
                 'id' => $store->id,
@@ -339,7 +341,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
         }
 
@@ -362,7 +364,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
         }
 
@@ -373,7 +375,7 @@ class AuthController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        if (!$otp || $otp->code !== $request->code) {
+        if (! $otp || $otp->code !== $request->code) {
             return response()->json(['message' => 'Invalid or expired OTP code.'], 422);
         }
 
@@ -417,7 +419,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
         }
 
@@ -457,7 +459,7 @@ class AuthController extends Controller
                 'city' => $request->user()->city,
                 'postal_code' => $request->user()->postal_code,
                 'country' => $request->user()->country,
-                'email_verified' => !is_null($request->user()->email_verified_at),
+                'email_verified' => ! is_null($request->user()->email_verified_at),
             ],
         ]);
     }
@@ -485,6 +487,7 @@ class AuthController extends Controller
         if (strlen($digits) <= 4) {
             return $phone;
         }
-        return substr($phone, 0, 2) . '****' . substr($phone, -2);
+
+        return substr($phone, 0, 2).'****'.substr($phone, -2);
     }
 }

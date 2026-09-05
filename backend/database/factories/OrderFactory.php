@@ -2,10 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Order;
-use App\Models\Product;
 use App\Models\User;
-use App\Models\VendorStore;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class OrderFactory extends Factory
@@ -14,7 +11,7 @@ class OrderFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'order_number' => 'ORD-' . strtoupper(uniqid()),
+            'order_number' => 'ORD-'.strtoupper(uniqid()),
             'status' => 'pending',
             'total' => 0,
             'payment_method' => 'cod',

@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OrderStatusUpdated;
+use App\Models\Category;
+use App\Models\Order;
+use App\Models\Product;
 use App\Models\User;
 use App\Models\VendorStore;
-use App\Models\Product;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Review;
-use App\Models\Payment;
-use App\Models\Category;
-use App\Events\OrderStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
@@ -46,7 +44,7 @@ class AdminController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -59,6 +57,7 @@ class AdminController extends Controller
         // Return full user details (password is hidden by the model's Hidden attribute)
         $users->getCollection()->transform(function ($user) {
             $user->makeVisible(['address', 'city', 'postal_code', 'country', 'phone', 'phone_verified_at', 'email_verified_at', 'created_at', 'updated_at']);
+
             return $user;
         });
 
@@ -76,6 +75,33 @@ class AdminController extends Controller
         return response()->json(['message' => 'User status updated.', 'user' => $user]);
     }
 
+    public function createAdmin(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'status' => ['nullable', 'in:active,inactive,banned'],
+        ]);
+
+        $admin = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => 'admin',
+            'status' => $validated['status'] ?? 'active',
+        ]);
+
+        return response()->json(['message' => 'Admin created.', 'admin' => $admin], 201);
+    }
+
+    public function deleteUser(User $user)
+    {
+        $user->delete();
+
+        return response()->json(['message' => 'User deleted.']);
+    }
+
     public function vendors(Request $request)
     {
         $query = VendorStore::query()->with('user');
@@ -84,7 +110,7 @@ class AdminController extends Controller
             $search = $request->search;
             $query->whereHas('user', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             })->orWhere('store_name', 'like', "%{$search}%");
         }
 
@@ -111,6 +137,57 @@ class AdminController extends Controller
         return response()->json(['message' => 'Vendor suspended.', 'vendor' => $vendorStore]);
     }
 
+    public function vendorApplications(Request $request)
+    {
+        $query = VendorStore::where('status', 'pending')
+            ->orWhere('verified', false)
+            ->with('user');
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            })->orWhere('store_name', 'like', "%{$search}%");
+        }
+
+        $applications = $query->latest()->paginate(15);
+
+        return response()->json($applications);
+    }
+
+    public function newVendorApplications(Request $request)
+    {
+        $query = VendorApplication::query();
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('store_name', 'like', "%{$search}%");
+            });
+        }
+
+        $applications = $query->latest()->paginate(15);
+
+        return response()->json($applications);
+    }
+
+    public function approveVendor(VendorStore $vendorStore)
+    {
+        $vendorStore->update(['verified' => true, 'status' => 'active']);
+
+        return response()->json(['message' => 'Vendor approved.', 'vendor' => $vendorStore]);
+    }
+
+    public function rejectVendor(VendorStore $vendorStore)
+    {
+        $vendorStore->update(['status' => 'rejected']);
+
+        return response()->json(['message' => 'Vendor rejected.', 'vendor' => $vendorStore]);
+    }
+
     public function products(Request $request)
     {
         $query = Product::query()->with(['vendorStore', 'category']);
@@ -118,7 +195,7 @@ class AdminController extends Controller
         if ($request->has('search')) {
             $search = $request->search;
             $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                ->orWhere('sku', 'like', "%{$search}%");
         }
 
         if ($request->has('category')) {
@@ -152,9 +229,9 @@ class AdminController extends Controller
         if ($request->has('search')) {
             $search = $request->search;
             $query->where('order_number', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  });
+                ->orWhereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                });
         }
 
         $orders = $query->latest()->paginate(20);

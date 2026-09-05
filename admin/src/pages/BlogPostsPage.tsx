@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Search, Plus, Eye, Trash2, X } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Search, Plus, Eye, Trash2, X, Upload } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
 import { Modal } from '../components/Modal';
@@ -9,13 +9,24 @@ interface BlogPost {
   title: string;
   slug: string;
   cover_image?: string;
-  excerpt?: string;
+  body: string;
   published_at?: string;
   is_published: boolean;
+  category?: string;
+  author?: string;
 }
 
 interface ApiFetch {
   (endpoint: string, options?: RequestInit): Promise<any>;
+}
+
+function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 export function BlogPostsPage({ apiFetch }: { apiFetch: ApiFetch }) {
@@ -24,7 +35,10 @@ export function BlogPostsPage({ apiFetch }: { apiFetch: ApiFetch }) {
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: '', slug: '', cover_image: '', body: '', excerpt: '', published_at: '', is_published: false });
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState({ title: '', slug: '', cover_image: '', body: '', published_at: '', is_published: false, category: '', author: '' });
 
   const load = async () => {
     setLoading(true);
@@ -40,23 +54,55 @@ export function BlogPostsPage({ apiFetch }: { apiFetch: ApiFetch }) {
 
   useEffect(() => { load(); }, [apiFetch]);
 
+  const handleTitleChange = (value: string) => {
+    const slug = toSlug(value);
+    setForm({ ...form, title: value, slug });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const data = await apiFetch('/admin/content/upload/image', {
+        method: 'POST',
+        body: fd,
+      });
+      const url = data.url as string;
+      setForm({ ...form, cover_image: url });
+      setPreviewUrl(url);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const openCreate = () => {
     setEditing(null);
-    setForm({ title: '', slug: '', cover_image: '', body: '', excerpt: '', published_at: '', is_published: false });
+    setForm({ title: '', slug: '', cover_image: '', body: '', published_at: '', is_published: false, category: '', author: '' });
+    setPreviewUrl('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setOpenModal(true);
   };
 
   const openEdit = (post: BlogPost) => {
     setEditing(post);
-    setForm({
-      title: post.title,
-      slug: post.slug,
-      cover_image: post.cover_image || '',
-      body: '',
-      excerpt: post.excerpt || '',
-      published_at: post.published_at ? post.published_at.slice(0, 10) : '',
-      is_published: post.is_published,
-    });
+      setForm({
+        title: post.title,
+        slug: post.slug,
+        cover_image: post.cover_image || '',
+        body: post.body || '',
+        published_at: post.published_at ? post.published_at.slice(0, 10) : '',
+        is_published: post.is_published,
+        category: post.category || '',
+        author: post.author || '',
+      });
+    setPreviewUrl(post.cover_image || '');
     setOpenModal(true);
   };
 
@@ -64,7 +110,7 @@ export function BlogPostsPage({ apiFetch }: { apiFetch: ApiFetch }) {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { ...form };
+      const payload: Record<string, unknown> = { ...form };
       if (!payload.published_at) delete payload.published_at;
       if (editing) {
         await apiFetch(`/admin/content/blog/${editing.id}`, { method: 'PUT', body: JSON.stringify(payload) });
@@ -107,7 +153,8 @@ export function BlogPostsPage({ apiFetch }: { apiFetch: ApiFetch }) {
         data={posts}
         columns={[
           { key: 'title', header: 'Title', render: (item: BlogPost) => <span className="font-semibold text-slate-900 text-sm">{item.title}</span> },
-          { key: 'slug', header: 'Slug', render: (item: BlogPost) => <span className="font-mono text-xs text-slate-500">{item.slug}</span> },
+          { key: 'category', header: 'Category', render: (item: BlogPost) => <span className="text-slate-600 text-sm">{item.category || '-'}</span> },
+          { key: 'author', header: 'Author', render: (item: BlogPost) => <span className="text-slate-600 text-sm">{item.author || '-'}</span> },
           { key: 'published_at', header: 'Published', render: (item: BlogPost) => <span className="text-slate-600 text-sm">{item.published_at ? new Date(item.published_at).toLocaleDateString() : '-'}</span> },
           { key: 'is_published', header: 'Status', render: (item: BlogPost) => (
             <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${item.is_published ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
@@ -132,29 +179,38 @@ export function BlogPostsPage({ apiFetch }: { apiFetch: ApiFetch }) {
       <Modal open={openModal} onClose={() => setOpenModal(false)} title={editing ? 'Edit Blog Post' : 'New Blog Post'} footer={
         <>
           <button onClick={() => setOpenModal(false)} className="px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
-          <button onClick={submit} disabled={saving} className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
+          <button onClick={submit} disabled={saving || uploading} className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
         </>
       }>
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
-            <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" required />
+            <input type="text" value={form.title} onChange={e => handleTitleChange(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" required />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+              <input type="text" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Author</label>
+              <input type="text" value={form.author} onChange={e => setForm({ ...form, author: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Slug</label>
-            <input type="text" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" required />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Cover Image URL</label>
-            <input type="text" value={form.cover_image} onChange={e => setForm({ ...form, cover_image: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Excerpt</label>
-            <textarea value={form.excerpt} onChange={e => setForm({ ...form, excerpt: e.target.value })} rows={2} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Cover Image</label>
+            <input type="file" ref={fileInputRef} accept="image/*" onChange={handleFileChange} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            {previewUrl && (
+              <div className="mt-2">
+                <img src={previewUrl} alt="Preview" className="h-32 w-full object-cover rounded-lg" />
+                <button type="button" onClick={() => { setForm({ ...form, cover_image: '' }); setPreviewUrl(''); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="mt-1 text-xs text-red-600 hover:underline">Remove image</button>
+              </div>
+            )}
+            {uploading && <p className="text-xs text-slate-500 mt-1">Uploading...</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Body</label>
-            <textarea value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} rows={6} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" required />
+            <textarea value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} rows={8} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Publish Date</label>

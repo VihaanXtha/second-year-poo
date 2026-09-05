@@ -2,9 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Category;
-use App\Models\Product;
-use App\Models\VendorStore;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class CategoryFactory extends Factory

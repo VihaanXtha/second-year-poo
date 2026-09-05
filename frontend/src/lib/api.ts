@@ -11,8 +11,14 @@ export async function apiClient<T = unknown>(path: string, options?: RequestInit
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || 'Request failed');
+    let errorMessage = 'Request failed';
+    try {
+      const error = await response.json();
+      errorMessage = typeof error?.message === 'string' ? error.message : errorMessage;
+    } catch {
+      // Response is not JSON (e.g., HTML error page or empty body)
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json();
@@ -22,8 +28,9 @@ export interface BlogPost {
   id: number;
   title: string;
   slug: string;
+  category?: string;
+  author?: string;
   cover_image?: string;
-  excerpt?: string;
   body: string;
   published_at?: string;
   is_published: boolean;
@@ -35,6 +42,33 @@ export interface CareerPost {
   slug: string;
   description: string;
   requirements?: string[];
+  is_published: boolean;
+}
+
+export interface JobPosting {
+  id: number;
+  title: string;
+  slug: string;
+  department: string;
+  location: string;
+  employment_type: string;
+  description: string;
+  responsibilities?: string;
+  requirements?: string[];
+  benefits?: string[];
+  application_deadline?: string;
+  is_active: boolean;
+}
+
+export interface Testimonial {
+  id: number;
+  name: string;
+  slug: string;
+  role?: string;
+  company?: string;
+  content: string;
+  photo?: string;
+  rating: number;
   is_published: boolean;
 }
 

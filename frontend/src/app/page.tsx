@@ -11,11 +11,10 @@ import Testimonials from "@/components/sections/Testimonials";
 import BlogTeaser from "@/components/sections/BlogTeaser";
 import FAQPreview from "@/components/sections/FAQPreview";
 import VendorCTA from "@/components/sections/VendorCTA";
-import NewsletterSignup from "@/components/sections/NewsletterSignup";
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
+    <main className="relative">
       <HomepageSlider />
       <About />
       <WhyCircuitBazaar />
@@ -28,7 +27,6 @@ export default function Home() {
       <BlogTeaser />
       <FAQPreview />
       <VendorCTA />
-      <NewsletterSignup />
     </main>
   );
 }

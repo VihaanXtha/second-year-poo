@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Review;
-use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -22,13 +21,13 @@ class ReviewController extends Controller
         $hasDeliveredOrder = OrderItem::where('product_id', $validated['product_id'])
             ->whereHas('order', function ($query) {
                 $query->where('user_id', Auth::id())
-                      ->where('status', 'delivered');
+                    ->where('status', 'delivered');
             })
             ->exists();
 
-        if (!$hasDeliveredOrder) {
+        if (! $hasDeliveredOrder) {
             return response()->json([
-                'message' => 'You can only review products you have purchased and received.'
+                'message' => 'You can only review products you have purchased and received.',
             ], 403);
         }
 

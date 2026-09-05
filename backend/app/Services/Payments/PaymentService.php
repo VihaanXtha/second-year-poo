@@ -10,10 +10,10 @@ class PaymentService
     public function gateway(string $method): PaymentGatewayInterface
     {
         return match ($method) {
-            'esewa' => new EsewaGateway(),
-            'khalti' => new KhaltiGateway(),
-            'stripe' => new StripeGateway(),
-            'cod' => new CodGateway(),
+            'esewa' => new EsewaGateway,
+            'khalti' => new KhaltiGateway,
+            'stripe' => new StripeGateway,
+            'cod' => new CodGateway,
             default => throw new InvalidArgumentException("Unsupported payment method: {$method}"),
         };
     }

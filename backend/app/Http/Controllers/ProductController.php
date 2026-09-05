@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use App\Models\Category;
-use App\Models\Review;
-use App\Models\OrderItem;
-use Illuminate\Http\Request;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
@@ -23,8 +21,8 @@ class ProductController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -38,7 +36,7 @@ class ProductController extends Controller
 
         if ($request->has('spec')) {
             foreach ($request->spec as $key => $value) {
-                if (!is_string($key) || $value === null || $value === '') {
+                if (! is_string($key) || $value === null || $value === '') {
                     continue;
                 }
                 $query->where("specs->$key", '=', (string) $value);

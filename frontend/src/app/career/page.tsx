@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { Metadata } from "next";
-import { apiClient, CareerPost } from "@/lib/api";
+import { apiClient, JobPosting } from "@/lib/api";
+import { JobPostingCard } from "@/components/sections/JobPostingCard";
 
 export const metadata: Metadata = {
   title: "Careers | Circuit Bazaar",
@@ -9,8 +10,14 @@ export const metadata: Metadata = {
 };
 
 export default async function CareerPage() {
-  const data = await apiClient<{ posts: CareerPost[] }>('/careers');
-  const roles = (data.posts || []).filter((p) => p.is_published);
+  let postings: JobPosting[] = [];
+  let fetchError = false;
+  try {
+    const data = await apiClient<{ postings: JobPosting[] }>('/job-postings');
+    postings = data.postings || [];
+  } catch {
+    fetchError = true;
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -22,39 +29,16 @@ export default async function CareerPage() {
           </p>
         </div>
 
+        {fetchError && (
+          <div className="rounded-2xl bg-red-50 border border-red-200 p-6 text-center">
+            <p className="text-sm text-red-700">Unable to load job postings right now. Please try again later.</p>
+          </div>
+        )}
+
         <div className="space-y-4">
-          {roles.map((role) => {
-            const mailtoHref = `mailto:careers@circuitbazaar.com?subject=Application%20for%20${encodeURIComponent(role.title)}`;
-            return (
-              <div
-                key={role.id}
-                className="group rounded-2xl border border-slate-200 bg-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/5"
-              >
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <h2 className="text-xl font-semibold text-slate-900 group-hover:text-red-700 transition-colors">
-                      {role.title}
-                    </h2>
-                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                      Full-time
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-600 mb-2">{role.description}</p>
-                  <div className="flex items-center gap-4 text-xs text-slate-400">
-                    <span>{role.requirements?.[0] || 'Engineering'}</span>
-                    <span aria-hidden="true">•</span>
-                    <span>Kathmandu</span>
-                  </div>
-                </div>
-                <a
-                  href={mailtoHref}
-                  className="inline-flex items-center justify-center rounded-xl bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
-                >
-                  Apply
-                </a>
-              </div>
-            );
-          })}
+          {postings.map((role) => (
+            <JobPostingCard key={role.id} posting={role} />
+          ))}
         </div>
       </div>
     </div>

@@ -31,11 +31,15 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="bg-white py-20">
+    <section id="how-it-works" className="relative overflow-hidden bg-white py-20">
+      <div className="absolute inset-0 -z-10 circuit-bg opacity-50" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
+          <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-600 ring-1 ring-red-600/20">
             How It Works
+          </span>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
+            Buying hardware, <span className="text-gradient-red">simplified.</span>
           </h2>
           <p className="mt-4 text-slate-600">
             Buying hardware in Nepal just got simpler. Here&apos;s the Circuit Bazaar
@@ -43,9 +47,12 @@ export default function HowItWorks() {
           </p>
         </div>
         <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step) => (
-            <div key={step.number} className="relative">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+          {steps.map((step, i) => (
+            <div
+              key={step.number}
+              className="group relative rounded-2xl bg-white p-6 ring-1 ring-slate-200 hover:ring-red-200 card-hover-lift transition-all"
+            >
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white transition-colors">
                 <span className="material-symbols-outlined text-[28px]">
                   {step.icon}
                 </span>
@@ -59,8 +66,8 @@ export default function HowItWorks() {
               <p className="mt-2 text-sm text-slate-600 leading-relaxed">
                 {step.description}
               </p>
-              {step.number !== "04" && (
-                <div className="hidden lg:block absolute top-7 left-[calc(100%+1rem)] w-[calc(100%-3rem)] border-t-2 border-dashed border-slate-200" />
+              {i < steps.length - 1 && (
+                <div className="hidden lg:block absolute top-9 left-[calc(100%+0.5rem)] w-[calc(100%-3rem)] h-px bg-gradient-to-r from-slate-200 via-red-200 to-slate-200" />
               )}
             </div>
           ))}

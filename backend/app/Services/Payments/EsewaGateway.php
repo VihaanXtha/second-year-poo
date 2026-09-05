@@ -3,10 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Models\Order;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Str;
 
 class EsewaGateway implements PaymentGatewayInterface
 {
@@ -51,14 +48,14 @@ class EsewaGateway implements PaymentGatewayInterface
     {
         $secretKey = Config::get('services.esewa.secret_key');
 
-        if (!isset($callbackData['signature'], $callbackData['data'])) {
+        if (! isset($callbackData['signature'], $callbackData['data'])) {
             return false;
         }
 
         $receivedSignature = $callbackData['signature'];
         $decodedData = json_decode(base64_decode($callbackData['data']), true);
 
-        if (!is_array($decodedData)) {
+        if (! is_array($decodedData)) {
             return false;
         }
 

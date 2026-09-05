@@ -3,14 +3,16 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Dashboard } from './pages/Dashboard';
 import { Analytics } from './pages/Analytics';
-import { UsersPage } from './pages/UsersPage';
+import { CustomersPage } from './pages/CustomersPage';
+import { AdminsPage } from './pages/AdminsPage';
 import { VendorsPage } from './pages/VendorsPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { SalesReports } from './pages/SalesReports';
 import { BlogPostsPage } from './pages/BlogPostsPage';
-import { CareersPage } from './pages/CareersPage';
+import { JobPostingsPage } from './pages/JobPostingsPage';
+import { TestimonialsPage } from './pages/TestimonialsPage';
 import { CourierPage } from './pages/CourierPage';
 import { SlidersPage } from './pages/SlidersPage';
 import { Login } from './pages/Login';
@@ -25,11 +27,18 @@ export default function App() {
 
   const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     const token = getAdminToken();
+    const isFormData = options.body instanceof FormData;
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
     const res = await fetch(`${getApiUrl()}/api${endpoint}`, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        ...headers,
         ...options.headers,
       },
     });
@@ -53,14 +62,16 @@ export default function App() {
     const titles: Record<string, string> = {
       dashboard: 'Dashboard',
       analytics: 'Analytics',
-      users: 'Users',
+      customers: 'Customers',
       vendors: 'Vendors',
+      admins: 'Admins',
       products: 'Products',
       categories: 'Categories',
       orders: 'Orders',
       sales: 'Sales Reports',
       blog: 'Blog Posts',
-      careers: 'Careers',
+      careers: 'Job Postings',
+      testimonials: 'Testimonials',
       courier: 'Courier Info',
       sliders: 'Homepage Sliders',
       settings: 'Settings',
@@ -74,10 +85,12 @@ export default function App() {
         return <Dashboard apiFetch={apiFetch} />;
       case 'analytics':
         return <Analytics apiFetch={apiFetch} />;
-      case 'users':
-        return <UsersPage apiFetch={apiFetch} />;
+      case 'customers':
+        return <CustomersPage apiFetch={apiFetch} />;
       case 'vendors':
         return <VendorsPage apiFetch={apiFetch} />;
+      case 'admins':
+        return <AdminsPage apiFetch={apiFetch} />;
       case 'products':
         return <ProductsPage apiFetch={apiFetch} />;
       case 'categories':
@@ -89,7 +102,9 @@ export default function App() {
       case 'blog':
         return <BlogPostsPage apiFetch={apiFetch} />;
       case 'careers':
-        return <CareersPage apiFetch={apiFetch} />;
+        return <JobPostingsPage apiFetch={apiFetch} />;
+      case 'testimonials':
+        return <TestimonialsPage apiFetch={apiFetch} />;
       case 'courier':
         return <CourierPage apiFetch={apiFetch} />;
       case 'sliders':

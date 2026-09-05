@@ -14,6 +14,7 @@ class SmsService
         }
 
         Log::warning("Unknown SMS gateway: {$via}");
+
         return false;
     }
 
@@ -23,8 +24,9 @@ class SmsService
         $token = config('services.twilio.token');
         $from = config('services.twilio.from');
 
-        if (!$sid || !$token || !$from) {
+        if (! $sid || ! $token || ! $from) {
             Log::warning('Twilio credentials not configured.');
+
             return false;
         }
 

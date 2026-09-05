@@ -3,9 +3,8 @@
 namespace App\Services\Payments;
 
 use App\Models\Order;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 
 class KhaltiGateway implements PaymentGatewayInterface
 {
@@ -20,7 +19,7 @@ class KhaltiGateway implements PaymentGatewayInterface
                 'website_url' => config('app.url'),
                 'amount' => (int) round($order->total * 100),
                 'order_id' => $order->order_number,
-                'order_name' => 'Order ' . $order->order_number,
+                'order_name' => 'Order '.$order->order_number,
                 'customer_info' => [
                     'name' => $order->user->name ?? 'Customer',
                     'email' => $order->user->email ?? 'customer@example.com',
@@ -31,7 +30,7 @@ class KhaltiGateway implements PaymentGatewayInterface
 
         return [
             'method' => 'GET',
-            'action' => $data['payment_url'] ?? ($baseUrl . '/epayment/initiate/'),
+            'action' => $data['payment_url'] ?? ($baseUrl.'/epayment/initiate/'),
             'fields' => $data,
         ];
     }
@@ -41,7 +40,7 @@ class KhaltiGateway implements PaymentGatewayInterface
         $secretKey = Config::get('services.khalti.secret_key');
         $baseUrl = Config::get('services.khalti.base_url', 'https://dev.khalti.com/api');
 
-        if (!isset($callbackData['pidx'])) {
+        if (! isset($callbackData['pidx'])) {
             return false;
         }
 

@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\VendorStore;
-use App\Models\Product;
+use App\Events\OrderStatusUpdated;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\Review;
-use App\Events\OrderStatusUpdated;
+use App\Models\VendorStore;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -18,6 +18,7 @@ use Illuminate\Validation\ValidationException;
 class VendorController extends Controller
 {
     public function __construct(private CloudinaryService $cloudinary) {}
+
     public function registerStore(Request $request)
     {
         $validated = $request->validate([
@@ -25,6 +26,13 @@ class VendorController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'address' => ['nullable', 'string', 'max:500'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'pan_number' => ['required', 'string', 'max:50', 'regex:/^[A-Z]{3}[0-9]{7}$|^[0-9]{8,10}$/'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'province' => ['nullable', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
+            'municipality' => ['nullable', 'string', 'max:100'],
+            'ward' => ['nullable', 'string', 'max:20'],
+            'postal_code' => ['nullable', 'string', 'max:20'],
         ]);
 
         $store = VendorStore::create(array_merge($validated, [
@@ -42,7 +50,7 @@ class VendorController extends Controller
     {
         $store = VendorStore::where('user_id', Auth::id())->first();
 
-        if (!$store) {
+        if (! $store) {
             return response()->json(['message' => 'No store found.'], 404);
         }
 
@@ -57,7 +65,7 @@ class VendorController extends Controller
 
         if ($request->has('search')) {
             $query->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('sku', 'like', "%{$request->search}%");
+                ->orWhere('sku', 'like', "%{$request->search}%");
         }
 
         if ($request->has('status')) {
@@ -108,7 +116,7 @@ class VendorController extends Controller
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            if (!in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp'])) {
+            if (! in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp'])) {
                 return response()->json(['message' => 'Image must be jpeg, png, or webp.'], 422);
             }
             if ($file->getSize() > 2 * 1024 * 1024) {
@@ -141,7 +149,7 @@ class VendorController extends Controller
         $validated = $request->validate([
             'category_id' => ['required', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:100', 'unique:products,sku,' . $product->id],
+            'sku' => ['required', 'string', 'max:100', 'unique:products,sku,'.$product->id],
             'description' => ['nullable', 'string', 'max:2000'],
             'price' => ['required', 'numeric', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
@@ -167,7 +175,7 @@ class VendorController extends Controller
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            if (!in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp'])) {
+            if (! in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp'])) {
                 return response()->json(['message' => 'Image must be jpeg, png, or webp.'], 422);
             }
             if ($file->getSize() > 2 * 1024 * 1024) {
@@ -216,7 +224,7 @@ class VendorController extends Controller
 
         $url = $this->uploadProductImage($request->file('image'));
 
-        if (!$url) {
+        if (! $url) {
             return response()->json(['message' => 'Image upload failed.'], 422);
         }
 
@@ -244,8 +252,9 @@ class VendorController extends Controller
         }
 
         foreach ($specs as $key => $value) {
-            if (!in_array($key, $schemaKeys, true)) {
+            if (! in_array($key, $schemaKeys, true)) {
                 $errors[$key] = "Unknown spec field: $key.";
+
                 continue;
             }
 
@@ -253,20 +262,20 @@ class VendorController extends Controller
             $type = $field['type'] ?? 'text';
 
             if ($type === 'number') {
-                if (!is_numeric($value)) {
+                if (! is_numeric($value)) {
                     $errors[$key] = "{$field['label']} must be a number.";
                 }
             } elseif ($type === 'select') {
                 $options = $field['options'] ?? [];
-                if (!in_array($value, $options, true)) {
-                    $errors[$key] = "{$field['label']} must be one of: " . implode(', ', $options) . ".";
+                if (! in_array($value, $options, true)) {
+                    $errors[$key] = "{$field['label']} must be one of: ".implode(', ', $options).'.';
                 }
             } elseif ($type === 'boolean') {
-                if (!is_bool($value)) {
+                if (! is_bool($value)) {
                     $errors[$key] = "{$field['label']} must be true or false.";
                 }
             } elseif ($type === 'text') {
-                if (!is_string($value)) {
+                if (! is_string($value)) {
                     $errors[$key] = "{$field['label']} must be a string.";
                 }
             }
@@ -304,7 +313,7 @@ class VendorController extends Controller
             ->where('vendor_store_id', $store->id)
             ->exists();
 
-        if (!$hasItem) {
+        if (! $hasItem) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 

@@ -8,7 +8,6 @@ use App\Services\Payments\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -91,14 +90,14 @@ class PaymentController extends Controller
     {
         $order = Order::where('order_number', $orderNumber)->first();
 
-        if (!$order) {
+        if (! $order) {
             return;
         }
 
         DB::transaction(function () use ($order, $success, $transactionId) {
             $payment = $order->payments()->latest()->first();
 
-            if (!$payment) {
+            if (! $payment) {
                 return;
             }
 

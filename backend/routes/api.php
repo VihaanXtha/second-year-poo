@@ -1,15 +1,17 @@
 <?php
 
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ContentController;
+use App\Http\Controllers\JobPostingController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\VendorController;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\VendorController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\ContentController;
 
 // Public routes
 Route::get('/health', function () {
@@ -26,6 +28,10 @@ Route::post('/auth/vendor-login', [AuthController::class, 'vendorLogin'])->middl
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
 Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 Route::post('/auth/check-email', [AuthController::class, 'checkEmail'])->middleware('throttle:30,1');
+
+Route::post('/vendor/apply', [App\Http\Controllers\VendorApplicationController::class, 'apply'])->middleware('throttle:5,1');
+Route::post('/vendor/verify-otp', [App\Http\Controllers\VendorApplicationController::class, 'verifyOtp'])->middleware('throttle:10,1');
+Route::post('/vendor/resend-otp', [App\Http\Controllers\VendorApplicationController::class, 'resendOtp'])->middleware('throttle:5,1');
 
 // Public product browsing
 Route::get('/products', [ProductController::class, 'index']);
@@ -55,21 +61,33 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Public content routes
-Route::get('/blog', [ContentController::class, 'blogIndex']);
+Route::get('/blog', [ContentController::class, 'blogPublishedIndex']);
 Route::get('/blog/{id}', [ContentController::class, 'blogShow']);
+Route::get('/blog/slug/{slug}', [ContentController::class, 'blogShowBySlug']);
 Route::get('/careers', [ContentController::class, 'careerIndex']);
 Route::get('/careers/{id}', [ContentController::class, 'careerShow']);
 Route::get('/courier', [ContentController::class, 'courierShow']);
 Route::get('/sliders', [ContentController::class, 'activeSliders']);
 
+// Public job postings
+Route::get('/job-postings', [JobPostingController::class, 'index']);
+Route::get('/job-postings/{idOrSlug}', [JobPostingController::class, 'show']);
+Route::post('/job-postings/{id}/apply', [JobPostingController::class, 'apply']);
+
+// Public testimonials
+Route::get('/testimonials', [TestimonialController::class, 'index']);
+Route::get('/testimonials/{id}', [TestimonialController::class, 'show']);
+
 // Admin content routes
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin/content')->group(function () {
     // Blog
     Route::get('/blog', [ContentController::class, 'blogIndex']);
+    Route::get('/blog/slug/{slug}', [ContentController::class, 'blogShowBySlug']);
     Route::post('/blog', [ContentController::class, 'blogStore']);
     Route::get('/blog/{id}', [ContentController::class, 'blogShow']);
     Route::put('/blog/{id}', [ContentController::class, 'blogUpdate']);
     Route::delete('/blog/{id}', [ContentController::class, 'blogDestroy']);
+    Route::post('/upload/image', [ContentController::class, 'uploadImage']);
 
     // Careers
     Route::get('/careers', [ContentController::class, 'careerIndex']);
@@ -90,14 +108,37 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin/content')->grou
     Route::delete('/sliders/{id}', [ContentController::class, 'sliderDestroy']);
 });
 
+// Admin job postings
+Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+    Route::get('/job-postings', [JobPostingController::class, 'index']);
+    Route::post('/job-postings', [JobPostingController::class, 'store']);
+    Route::get('/job-postings/{id}', [JobPostingController::class, 'show']);
+    Route::put('/job-postings/{id}', [JobPostingController::class, 'update']);
+    Route::delete('/job-postings/{id}', [JobPostingController::class, 'destroy']);
+    Route::get('/job-postings/{id}/applications', [JobPostingController::class, 'applications']);
+
+    // Testimonials
+    Route::get('/testimonials', [TestimonialController::class, 'index']);
+    Route::post('/testimonials', [TestimonialController::class, 'store']);
+    Route::get('/testimonials/{id}', [TestimonialController::class, 'show']);
+    Route::put('/testimonials/{id}', [TestimonialController::class, 'update']);
+    Route::delete('/testimonials/{id}', [TestimonialController::class, 'destroy']);
+});
+
 // Admin routes
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/stats', [AdminController::class, 'stats']);
     Route::get('/users', [AdminController::class, 'users']);
     Route::patch('/users/{user}/status', [AdminController::class, 'updateUserStatus']);
+    Route::post('/users', [AdminController::class, 'createAdmin']);
+    Route::delete('/users/{user}', [AdminController::class, 'deleteUser']);
     Route::get('/vendors', [AdminController::class, 'vendors']);
     Route::post('/vendors/{vendorStore}/verify', [AdminController::class, 'verifyVendor']);
     Route::post('/vendors/{vendorStore}/suspend', [AdminController::class, 'suspendVendor']);
+    Route::get('/vendor-applications', [AdminController::class, 'vendorApplications']);
+    Route::get('/new-vendor-applications', [AdminController::class, 'newVendorApplications']);
+    Route::post('/vendor-applications/{vendorStore}/approve', [AdminController::class, 'approveVendor']);
+    Route::post('/vendor-applications/{vendorStore}/reject', [AdminController::class, 'rejectVendor']);
     Route::get('/products', [AdminController::class, 'products']);
     Route::delete('/products/{product}', [AdminController::class, 'deleteProduct']);
     Route::get('/orders', [AdminController::class, 'orders']);

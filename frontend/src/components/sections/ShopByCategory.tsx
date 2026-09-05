@@ -27,7 +27,7 @@ export default function ShopByCategory() {
             <Link
               key={cat.name}
               href="#"
-              className="group relative overflow-hidden rounded-2xl bg-white p-6 ring-1 ring-slate-200 hover:ring-slate-300 transition-all"
+              className="group relative overflow-hidden rounded-2xl bg-white p-6 ring-1 ring-slate-200 hover:ring-red-200 card-hover-lift transition-all"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white transition-colors">
                 <span className="material-symbols-outlined text-[24px]">

@@ -6,6 +6,7 @@ use App\Models\BlogPost;
 use App\Models\CareerPost;
 use App\Models\CourierInfo;
 use App\Models\HomepageSlider;
+use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -18,7 +19,32 @@ class ContentController extends Controller
 
     public function blogIndex()
     {
-        $posts = BlogPost::orderByDesc('published_at')->get(['id', 'title', 'slug', 'cover_image', 'excerpt', 'published_at', 'is_published']);
+        $posts = BlogPost::orderByDesc('published_at')->get(['id', 'title', 'slug', 'category', 'author', 'cover_image', 'published_at', 'is_published']);
+
+        $cloudinary = new CloudinaryService;
+        $posts->transform(function ($post) use ($cloudinary) {
+            if ($post->cover_image) {
+                $post->cover_image = $cloudinary->deliveryUrl($post->cover_image, 1200);
+            }
+
+            return $post;
+        });
+
+        return response()->json(['posts' => $posts]);
+    }
+
+    public function blogPublishedIndex()
+    {
+        $posts = BlogPost::where('is_published', true)->orderByDesc('published_at')->get(['id', 'title', 'slug', 'category', 'author', 'cover_image', 'published_at', 'is_published']);
+
+        $cloudinary = new CloudinaryService;
+        $posts->transform(function ($post) use ($cloudinary) {
+            if ($post->cover_image) {
+                $post->cover_image = $cloudinary->deliveryUrl($post->cover_image, 1200);
+            }
+
+            return $post;
+        });
 
         return response()->json(['posts' => $posts]);
     }
@@ -26,6 +52,23 @@ class ContentController extends Controller
     public function blogShow($id)
     {
         $post = BlogPost::findOrFail($id);
+
+        if ($post->cover_image) {
+            $cloudinary = new CloudinaryService;
+            $post->cover_image = $cloudinary->deliveryUrl($post->cover_image, 1200);
+        }
+
+        return response()->json($post);
+    }
+
+    public function blogShowBySlug($slug)
+    {
+        $post = BlogPost::where('slug', $slug)->firstOrFail();
+
+        if ($post->cover_image) {
+            $cloudinary = new CloudinaryService;
+            $post->cover_image = $cloudinary->deliveryUrl($post->cover_image, 1200);
+        }
 
         return response()->json($post);
     }
@@ -37,9 +80,10 @@ class ContentController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'unique:blog_posts,slug'],
+            'category' => ['required', 'string', 'max:255'],
+            'author' => ['nullable', 'string', 'max:255'],
             'cover_image' => ['nullable', 'string', 'max:500'],
-            'body' => ['required', 'string'],
-            'excerpt' => ['nullable', 'string', 'max:500'],
+            'body' => ['nullable', 'string'],
             'published_at' => ['nullable', 'date'],
             'is_published' => ['boolean'],
         ]);
@@ -58,9 +102,10 @@ class ContentController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique('blog_posts', 'slug')->ignore($post->id)],
+            'category' => ['required', 'string', 'max:255'],
+            'author' => ['nullable', 'string', 'max:255'],
             'cover_image' => ['nullable', 'string', 'max:500'],
-            'body' => ['required', 'string'],
-            'excerpt' => ['nullable', 'string', 'max:500'],
+            'body' => ['nullable', 'string'],
             'published_at' => ['nullable', 'date'],
             'is_published' => ['boolean'],
         ]);
@@ -251,11 +296,29 @@ class ContentController extends Controller
         return response()->json(['message' => 'Slider deleted.']);
     }
 
+    public function uploadImage(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $request->validate([
+            'image' => ['required', 'image', 'max:5120'],
+        ]);
+
+        $cloudinary = new CloudinaryService;
+        $url = $cloudinary->upload($request->file('image'), 'circuit-bazaar/blog');
+
+        if (! $url) {
+            return response()->json(['message' => 'Upload failed.'], 422);
+        }
+
+        return response()->json(['url' => $url]);
+    }
+
     private function authorizeAdmin(): void
     {
         $user = Auth::user();
 
-        if (!$user || $user->role !== 'admin') {
+        if (! $user || $user->role !== 'admin') {
             abort(403, 'Unauthorized.');
         }
     }

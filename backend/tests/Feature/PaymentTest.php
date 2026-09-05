@@ -54,7 +54,7 @@ class PaymentTest extends TestCase
 
         $order = Order::create([
             'user_id' => $user->id,
-            'order_number' => 'ORD-' . strtoupper(uniqid()),
+            'order_number' => 'ORD-'.strtoupper(uniqid()),
             'status' => 'pending',
             'total' => 200,
             'payment_method' => $method,
@@ -462,7 +462,7 @@ class PaymentTest extends TestCase
 
     public function test_cod_gateway_verify_always_confirms(): void
     {
-        $gateway = new CodGateway();
+        $gateway = new CodGateway;
 
         $this->assertTrue($gateway->verify([]));
         $this->assertTrue($gateway->verify(['anything' => 'here']));

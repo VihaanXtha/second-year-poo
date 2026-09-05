@@ -14,11 +14,13 @@ interface User {
   email_verified: boolean;
 }
 
+import { AddressValue } from "@/components/NepalAddressPicker";
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string, address?: AddressValue) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -64,11 +66,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const signup = useCallback(async (name: string, email: string, password: string) => {
+  const signup = useCallback(async (name: string, email: string, password: string, address?: AddressValue) => {
+    const body: Record<string, unknown> = { name, email, password, password_confirmation: password };
+    if (address) {
+      body.address = `${address.municipality}, ${address.district}, ${address.province}, ${address.country}`;
+      body.city = address.municipality;
+      body.postal_code = address.postal_code;
+      body.country = address.country;
+    }
     const res = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, password_confirmation: password }),
+      body: JSON.stringify(body),
     });
 
     const data = await res.json();

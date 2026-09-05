@@ -3,10 +3,8 @@
 namespace App\Services\Payments;
 
 use App\Models\Order;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 class StripeGateway implements PaymentGatewayInterface
 {
@@ -29,7 +27,7 @@ class StripeGateway implements PaymentGatewayInterface
         $data = $response->json();
 
         if (isset($data['error'])) {
-            throw new \RuntimeException('Stripe PaymentIntent creation failed: ' . ($data['error']['message'] ?? 'Unknown error'));
+            throw new \RuntimeException('Stripe PaymentIntent creation failed: '.($data['error']['message'] ?? 'Unknown error'));
         }
 
         return [
@@ -45,7 +43,7 @@ class StripeGateway implements PaymentGatewayInterface
         $secretKey = Config::get('services.stripe.secret_key');
         $baseUrl = Config::get('services.stripe.base_url', 'https://api.stripe.com');
 
-        if (!isset($callbackData['id'])) {
+        if (! isset($callbackData['id'])) {
             return false;
         }
 

@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\VendorStore;
@@ -26,7 +25,7 @@ class ChannelAuthTest extends TestCase
 
         return Order::create([
             'user_id' => $user->id,
-            'order_number' => 'ORD-' . strtoupper(uniqid()),
+            'order_number' => 'ORD-'.strtoupper(uniqid()),
             'status' => 'pending',
             'total' => 100,
             'payment_method' => 'cod',
@@ -45,7 +44,7 @@ class ChannelAuthTest extends TestCase
         $this->actingAs($user, 'sanctum');
 
         $response = $this->postJson('/api/broadcasting/auth', [
-            'channel_name' => 'private-order.' . $order->id,
+            'channel_name' => 'private-order.'.$order->id,
         ], [
             'X-Socket-ID' => '1',
         ]);
@@ -62,7 +61,7 @@ class ChannelAuthTest extends TestCase
         $this->actingAs($user, 'sanctum');
 
         $response = $this->postJson('/api/broadcasting/auth', [
-            'channel_name' => 'private-order.' . $order->id,
+            'channel_name' => 'private-order.'.$order->id,
         ], [
             'X-Socket-ID' => '1',
         ]);
@@ -79,12 +78,12 @@ class ChannelAuthTest extends TestCase
         $this->actingAs($otherUser, 'sanctum');
 
         $response = $this->post('/api/broadcasting/auth', [
-            'channel_name' => 'private-order.' . $order->id,
+            'channel_name' => 'private-order.'.$order->id,
         ], [
             'X-Socket-ID' => '1',
             'Accept' => 'application/json',
         ]);
 
-        $this->assertContains($response->status(), [200, 403], 'Unexpected status code: ' . $response->status());
+        $this->assertContains($response->status(), [200, 403], 'Unexpected status code: '.$response->status());
     }
 }
