@@ -12,6 +12,11 @@ import {
   LogOut,
   Menu,
   ChevronLeft,
+  FolderTree,
+  FileText as BlogIcon,
+  Briefcase,
+  Truck,
+  Image,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ElementType> = {
@@ -23,6 +28,11 @@ const iconMap: Record<string, React.ElementType> = {
   ShoppingCart,
   FileText,
   Settings,
+  FolderTree,
+  BlogIcon,
+  Briefcase,
+  Truck,
+  Image,
 };
 
 interface SidebarProps {
@@ -78,6 +88,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, colla
           { id: 'users', label: 'Users', icon: Users },
           { id: 'vendors', label: 'Vendors', icon: Store },
           { id: 'products', label: 'Products', icon: Package },
+          { id: 'categories', label: 'Categories', icon: FolderTree },
+          { id: 'blog', label: 'Blog Posts', icon: BlogIcon },
+          { id: 'careers', label: 'Careers', icon: Briefcase },
+          { id: 'courier', label: 'Courier Info', icon: Truck },
+          { id: 'sliders', label: 'Homepage Sliders', icon: Image },
           { id: 'orders', label: 'Orders', icon: ShoppingCart },
           { id: 'sales', label: 'Sales Reports', icon: FileText },
           { id: 'settings', label: 'Settings', icon: Settings },

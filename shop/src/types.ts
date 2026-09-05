@@ -7,6 +7,36 @@ export interface ProductSpec {
   value: string;
 }
 
+export interface CategorySpecField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'select' | 'boolean';
+  unit?: string;
+  options?: string[];
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  spec_schema?: CategorySpecField[];
+}
+
+export interface BackendProduct {
+  id: number;
+  name: string;
+  sku?: string;
+  description?: string;
+  price: number;
+  stock: number;
+  category: string;
+  image?: string;
+  specs?: Record<string, unknown>;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Product {
   id: string;
   sku: string;

@@ -1,10 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { apiClient } from "@/lib/api";
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient<{ categories: Category[] }>("/categories")
+      .then((data) => {
+        if (!cancelled) setCategories(data.categories || []);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
@@ -15,7 +37,39 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <Link href="/products" className="hover:text-slate-900">Products</Link>
+            <div ref={dropdownRef} className="relative">
+              <button
+                onClick={() => setCategoriesOpen(!categoriesOpen)}
+                className="hover:text-slate-900 inline-flex items-center gap-1"
+              >
+                Categories
+                <span className="material-symbols-outlined text-[18px]">{categoriesOpen ? 'expand_less' : 'expand_more'}</span>
+              </button>
+
+              {categoriesOpen && (
+                <div className="absolute top-full left-0 mt-2 w-[640px] rounded-2xl bg-white border border-slate-200 shadow-xl p-6">
+                  {loading ? (
+                    <div className="flex items-center justify-center h-32">
+                      <div className="animate-spin rounded-full h-6 w-6 border-2 border-red-600 border-t-transparent" />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {categories.map((cat) => (
+                        <Link
+                          key={cat.id}
+                          href={`/products?category=${cat.id}`}
+                          className="rounded-xl border border-slate-100 p-3 text-sm font-medium text-slate-700 hover:border-red-200 hover:text-red-700 hover:bg-red-50/50 transition-colors"
+                          onClick={() => setCategoriesOpen(false)}
+                        >
+                          {cat.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <Link href="/products" className="hover:text-slate-900">All Products</Link>
             <Link href="/about" className="hover:text-slate-900">About</Link>
             <Link href="/contact" className="hover:text-slate-900">Contact</Link>
             <Link href="/account" className="hover:text-slate-900">Account</Link>

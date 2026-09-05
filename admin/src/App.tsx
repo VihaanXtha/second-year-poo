@@ -6,8 +6,13 @@ import { Analytics } from './pages/Analytics';
 import { UsersPage } from './pages/UsersPage';
 import { VendorsPage } from './pages/VendorsPage';
 import { ProductsPage } from './pages/ProductsPage';
+import { CategoriesPage } from './pages/CategoriesPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { SalesReports } from './pages/SalesReports';
+import { BlogPostsPage } from './pages/BlogPostsPage';
+import { CareersPage } from './pages/CareersPage';
+import { CourierPage } from './pages/CourierPage';
+import { SlidersPage } from './pages/SlidersPage';
 import { Login } from './pages/Login';
 import { useAdminAuth } from './context/AuthContext';
 import { getAdminToken, getApiUrl } from './context/AuthContext';
@@ -51,8 +56,13 @@ export default function App() {
       users: 'Users',
       vendors: 'Vendors',
       products: 'Products',
+      categories: 'Categories',
       orders: 'Orders',
       sales: 'Sales Reports',
+      blog: 'Blog Posts',
+      careers: 'Careers',
+      courier: 'Courier Info',
+      sliders: 'Homepage Sliders',
       settings: 'Settings',
     };
     return titles[activeNav] || 'Dashboard';
@@ -70,10 +80,20 @@ export default function App() {
         return <VendorsPage apiFetch={apiFetch} />;
       case 'products':
         return <ProductsPage apiFetch={apiFetch} />;
+      case 'categories':
+        return <CategoriesPage apiFetch={apiFetch} />;
       case 'orders':
         return <OrdersPage apiFetch={apiFetch} />;
       case 'sales':
         return <SalesReports apiFetch={apiFetch} />;
+      case 'blog':
+        return <BlogPostsPage apiFetch={apiFetch} />;
+      case 'careers':
+        return <CareersPage apiFetch={apiFetch} />;
+      case 'courier':
+        return <CourierPage apiFetch={apiFetch} />;
+      case 'sliders':
+        return <SlidersPage apiFetch={apiFetch} />;
       case 'settings':
         return (
           <div className="space-y-6">

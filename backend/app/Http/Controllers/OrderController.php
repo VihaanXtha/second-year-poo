@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
@@ -47,7 +48,7 @@ class OrderController extends Controller
             'shipping_address' => ['required', 'string', 'max:500'],
             'shipping_city' => ['required', 'string', 'max:100'],
             'shipping_phone' => ['required', 'string', 'max:20'],
-            'payment_method' => ['required', 'in:esewa,khalti,cod'],
+            'payment_method' => ['required', 'in:esewa,khalti,cod,stripe'],
         ]);
 
         $total = 0;

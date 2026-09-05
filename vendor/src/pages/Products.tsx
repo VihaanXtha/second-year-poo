@@ -14,7 +14,7 @@ import {
 } from '../components/UI';
 import { Modal } from '../components/Modal';
 import { StatusBadge } from '../components/StatusBadge';
-import type { Product } from '../types';
+import type { Product, Category, CategorySpecField } from '../types';
 
 interface ProductsProps {
   apiFetch: ApiFetch;
@@ -27,8 +27,10 @@ interface ProductForm {
   category: string;
   price: string;
   stock: string;
-  image_url: string;
+  image: string;
+  imagePreview: string | null;
   status: 'active' | 'draft';
+  specs: Record<string, unknown>;
 }
 
 const blankForm: ProductForm = {
@@ -38,8 +40,10 @@ const blankForm: ProductForm = {
   category: '',
   price: '',
   stock: '',
-  image_url: '',
+  image: '',
+  imagePreview: null,
   status: 'active',
+  specs: {},
 };
 
 export function Products({ apiFetch }: ProductsProps) {
@@ -53,6 +57,10 @@ export function Products({ apiFetch }: ProductsProps) {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(blankForm);
   const [saving, setSaving] = useState(false);
+
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -68,15 +76,29 @@ export function Products({ apiFetch }: ProductsProps) {
     }
   };
 
+  const loadCategories = async () => {
+    setCategoriesLoading(true);
+    setCategoriesError(null);
+    try {
+      const data = await apiFetch<{ categories: Category[] }>('/api/categories');
+      setAllCategories(data.categories ?? []);
+    } catch (e) {
+      setCategoriesError(e instanceof Error ? e.message : 'Failed to load categories');
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
   useEffect(() => {
     load();
+    loadCategories();
   }, []);
 
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    products.forEach((p) => p.category && set.add(p.category));
-    return Array.from(set).sort();
-  }, [products]);
+  const activeSpecSchema = useMemo(() => {
+    if (!form.category) return [];
+    const cat = allCategories.find((c) => c.name === form.category || String(c.id) === form.category);
+    return cat?.spec_schema ?? [];
+  }, [form.category, allCategories]);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -97,6 +119,7 @@ export function Products({ apiFetch }: ProductsProps) {
 
   const openEdit = (product: Product) => {
     setEditing(product);
+    const specs = (product.specs as Record<string, unknown>) || {};
     setForm({
       name: product.name || '',
       sku: product.sku || '',
@@ -104,8 +127,10 @@ export function Products({ apiFetch }: ProductsProps) {
       category: product.category || '',
       price: String(product.price ?? 0),
       stock: String(product.stock ?? 0),
-      image_url: product.image_url || '',
+      image: product.image || '',
+      imagePreview: product.image || null,
       status: (product.status as any) === 'draft' ? 'draft' : 'active',
+      specs,
     });
     setOpenForm(true);
   };
@@ -114,26 +139,57 @@ export function Products({ apiFetch }: ProductsProps) {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = {
-        name: form.name,
-        sku: form.sku || undefined,
-        description: form.description || undefined,
-        category: form.category,
-        price: Number(form.price) || 0,
-        stock: Number(form.stock) || 0,
-        image_url: form.image_url || undefined,
-        status: form.status,
-      };
-      if (editing) {
-        await apiFetch(`/vendor/products/${editing.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        });
+      if (form.imagePreview) {
+        const fd = new FormData();
+        fd.append('name', form.name);
+        if (form.sku) fd.append('sku', form.sku);
+        if (form.description) fd.append('description', form.description);
+        fd.append('category', form.category);
+        fd.append('price', String(Number(form.price) || 0));
+        fd.append('stock', String(Number(form.stock) || 0));
+        fd.append('status', form.status);
+        if (Object.keys(form.specs).length > 0) {
+          fd.append('specs', JSON.stringify(form.specs));
+        }
+        fd.append('image', form.imagePreview);
+        if (editing) {
+          await apiFetch(`/vendor/products/${editing.id}`, {
+            method: 'PUT',
+            body: fd,
+          });
+        } else {
+          await apiFetch('/vendor/products', {
+            method: 'POST',
+            body: fd,
+          });
+        }
       } else {
-        await apiFetch('/vendor/products', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
+        const payload: Record<string, unknown> = {
+          name: form.name,
+          sku: form.sku || undefined,
+          description: form.description || undefined,
+          category: form.category,
+          price: Number(form.price) || 0,
+          stock: Number(form.stock) || 0,
+          status: form.status,
+        };
+        if (Object.keys(form.specs).length > 0) {
+          payload.specs = form.specs;
+        }
+        if (form.image) {
+          payload.image = form.image;
+        }
+        if (editing) {
+          await apiFetch(`/vendor/products/${editing.id}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+          });
+        } else {
+          await apiFetch('/vendor/products', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+        }
       }
       setOpenForm(false);
       await load();
@@ -152,6 +208,22 @@ export function Products({ apiFetch }: ProductsProps) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to delete product');
     }
+  };
+
+  const handleCategoryChange = (value: string) => {
+    const schema = allCategories.find((c) => c.name === value || String(c.id) === value)?.spec_schema ?? [];
+    const allowedKeys = new Set(schema.map((s) => s.key));
+    const nextSpecs: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(form.specs)) {
+      if (allowedKeys.has(key)) {
+        nextSpecs[key] = val;
+      }
+    }
+    setForm((f) => ({ ...f, category: value, specs: nextSpecs }));
+  };
+
+  const updateSpec = (key: string, value: unknown) => {
+    setForm((f) => ({ ...f, specs: { ...f.specs, [key]: value } }));
   };
 
   return (
@@ -182,7 +254,10 @@ export function Products({ apiFetch }: ProductsProps) {
             label="Category"
             value={category}
             onChange={setCategory}
-            options={[{ value: 'all', label: 'All categories' }, ...categories.map((c) => ({ value: c, label: c }))]}
+            options={[
+              { value: 'all', label: 'All categories' },
+              ...allCategories.map((c) => ({ value: c.name, label: c.name })),
+            ]}
           />
           <SelectField
             label="Status"
@@ -239,9 +314,9 @@ export function Products({ apiFetch }: ProductsProps) {
                     <td className="py-3">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-slate-100 text-slate-500">
-                          {p.image_url ? (
+                          {p.image ? (
                             <img
-                              src={p.image_url}
+                              src={p.image}
                               alt={p.name}
                               className="h-full w-full object-cover"
                               onError={(e) => ((e.currentTarget.style.display = 'none'))}
@@ -328,12 +403,19 @@ export function Products({ apiFetch }: ProductsProps) {
             onChange={(v) => setForm({ ...form, sku: v })}
             placeholder="e.g. ELE-001"
           />
-          <TextField
+          <SelectField
             label="Category"
             required
             value={form.category}
-            onChange={(v) => setForm({ ...form, category: v })}
-            placeholder="e.g. Resistors"
+            onChange={handleCategoryChange}
+            options={
+              categoriesLoading
+                ? [{ value: '', label: 'Loading...' }]
+                : [
+                    { value: '', label: 'Select a category' },
+                    ...allCategories.map((c) => ({ value: c.name, label: c.name })),
+                  ]
+            }
           />
           <TextField
             label="Price"
@@ -358,12 +440,42 @@ export function Products({ apiFetch }: ProductsProps) {
               onChange={(v) => setForm({ ...form, description: v })}
             />
           </div>
-          <TextField
-            label="Image URL"
-            value={form.image_url}
-            onChange={(v) => setForm({ ...form, image_url: v })}
-            placeholder="https://..."
-          />
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-slate-700">Product Image</label>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:rounded-md file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800"
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    setForm((f) => ({
+                      ...f,
+                      imagePreview: reader.result as string,
+                      image: '',
+                    }));
+                  };
+                  reader.readAsDataURL(file);
+                } else {
+                  setForm((f) => ({ ...f, imagePreview: null, image: f.image }));
+                }
+              }}
+            />
+            {(form.imagePreview || form.image) && (
+              <div className="mt-2 flex h-32 w-32 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                <img
+                  src={form.imagePreview || form.image}
+                  alt="Preview"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            )}
+            {form.image && !form.imagePreview && (
+              <p className="mt-1 text-xs text-slate-500">Using existing image URL. Upload a new file to replace it.</p>
+            )}
+          </div>
           <SelectField
             label="Status"
             value={form.status}
@@ -373,6 +485,21 @@ export function Products({ apiFetch }: ProductsProps) {
               { value: 'draft', label: 'Draft' },
             ]}
           />
+          {activeSpecSchema.length > 0 && (
+            <>
+              <div className="md:col-span-2 mt-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Specifications</p>
+              </div>
+              {activeSpecSchema.map((field) => (
+                <SpecField
+                  key={field.key}
+                  field={field}
+                  value={form.specs[field.key]}
+                  onChange={(value) => updateSpec(field.key, value)}
+                />
+              ))}
+            </>
+          )}
           <div className="md:col-span-2 flex justify-end gap-3 pt-2">
             <SecondaryButton onClick={() => setOpenForm(false)}>Cancel</SecondaryButton>
             <PrimaryButton type="submit" disabled={saving} icon="save">
@@ -382,5 +509,68 @@ export function Products({ apiFetch }: ProductsProps) {
         </form>
       </Modal>
     </div>
+  );
+}
+
+interface SpecFieldProps {
+  field: CategorySpecField;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}
+
+function SpecField({ field, value, onChange }: SpecFieldProps) {
+  const label = field.unit ? `${field.label} (${field.unit})` : field.label;
+
+  if (field.type === 'select') {
+    return (
+      <SelectField
+        label={label}
+        value={String(value ?? '')}
+        onChange={(v) => onChange(v || null)}
+        options={[
+          { value: '', label: 'None' },
+          ...(field.options ?? []).map((opt) => ({ value: opt, label: opt })),
+        ]}
+      />
+    );
+  }
+
+  if (field.type === 'boolean') {
+    return (
+      <div className="flex items-center gap-2 pt-6">
+        <input
+          id={field.key}
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(e) => onChange(e.target.checked)}
+          className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+        />
+        <label htmlFor={field.key} className="text-sm text-slate-700">
+          {field.label}
+        </label>
+      </div>
+    );
+  }
+
+  if (field.type === 'number') {
+    return (
+      <TextField
+        label={label}
+        type="number"
+        value={String(value ?? '')}
+        onChange={(v) => {
+          const num = Number(v);
+          onChange(v === '' ? '' : Number.isNaN(num) ? v : num);
+        }}
+      />
+    );
+  }
+
+  return (
+    <TextField
+      label={label}
+      value={String(value ?? '')}
+      onChange={(v) => onChange(v || null)}
+    />
   );
 }

@@ -1,5 +1,5 @@
 import Navbar from "@/components/sections/Navbar";
-import Hero from "@/components/sections/Hero";
+import HomepageSlider from "@/components/sections/HomepageSlider";
 import About from "@/components/sections/About";
 import WhyCircuitBazaar from "@/components/sections/WhyCircuitBazaar";
 import FeaturedProducts from "@/components/sections/FeaturedProducts";
@@ -16,7 +16,7 @@ import NewsletterSignup from "@/components/sections/NewsletterSignup";
 export default function Home() {
   return (
     <main className="min-h-screen">
-      <Hero />
+      <HomepageSlider />
       <About />
       <WhyCircuitBazaar />
       <FeaturedProducts />

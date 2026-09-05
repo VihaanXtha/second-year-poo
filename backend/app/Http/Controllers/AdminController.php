@@ -9,6 +9,8 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Review;
 use App\Models\Payment;
+use App\Models\Category;
+use App\Events\OrderStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -168,6 +170,8 @@ class AdminController extends Controller
 
         $order->update(['status' => $validated['status']]);
 
+        event(new OrderStatusUpdated($order));
+
         return response()->json(['message' => 'Order status updated.', 'order' => $order]);
     }
 
@@ -193,5 +197,25 @@ class AdminController extends Controller
         }
 
         return response()->json(['sales' => $sales]);
+    }
+
+    public function categories()
+    {
+        $categories = Category::orderBy('name')->get(['id', 'name', 'slug', 'spec_schema']);
+
+        return response()->json(['categories' => $categories]);
+    }
+
+    public function updateCategorySpecSchema(Request $request, Category $category)
+    {
+        $validated = $request->validate([
+            'spec_schema' => ['nullable', 'array'],
+        ]);
+
+        $category->update([
+            'spec_schema' => $validated['spec_schema'] ?? [],
+        ]);
+
+        return response()->json(['message' => 'Category updated.', 'category' => $category]);
     }
 }

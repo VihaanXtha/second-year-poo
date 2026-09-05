@@ -1,48 +1,16 @@
+export const dynamic = 'force-dynamic';
+
 import { Metadata } from "next";
+import { apiClient, CareerPost } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "Careers | Circuit Bazaar",
   description: "Join the Circuit Bazaar team and help build Nepal's most trusted hardware marketplace.",
 };
 
-export default function CareerPage() {
-  const roles = [
-    {
-      title: "Frontend Engineer",
-      department: "Engineering",
-      location: "Kathmandu / Remote",
-      type: "Full-time",
-      description: "Build polished customer and vendor experiences with Next.js, React, and TypeScript.",
-    },
-    {
-      title: "Backend Engineer",
-      department: "Engineering",
-      location: "Kathmandu / Remote",
-      type: "Full-time",
-      description: "Design Laravel APIs, database schemas, and integration pipelines for payments and logistics.",
-    },
-    {
-      title: "Product Designer",
-      department: "Design",
-      location: "Kathmandu",
-      type: "Full-time",
-      description: "Own the end-to-end UX for shop, admin, and vendor flows, from research to production polish.",
-    },
-    {
-      title: "Vendor Success Manager",
-      department: "Operations",
-      location: "Kathmandu",
-      type: "Full-time",
-      description: "Onboard new vendors, run verification programs, and improve seller satisfaction and retention.",
-    },
-    {
-      title: "Content & Community Writer",
-      department: "Marketing",
-      location: "Remote",
-      type: "Contract",
-      description: "Write buying guides, launch announcements, vendor spotlights, and technical documentation.",
-    },
-  ];
+export default async function CareerPage() {
+  const data = await apiClient<{ posts: CareerPost[] }>('/careers');
+  const roles = (data.posts || []).filter((p) => p.is_published);
 
   return (
     <div className="min-h-screen bg-white">
@@ -55,36 +23,36 @@ export default function CareerPage() {
         </div>
 
         <div className="space-y-4">
-          {roles.map((role, idx) => {
+          {roles.map((role) => {
             const mailtoHref = `mailto:careers@circuitbazaar.com?subject=Application%20for%20${encodeURIComponent(role.title)}`;
             return (
-            <div
-              key={idx}
-              className="group rounded-2xl border border-slate-200 bg-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/5"
-            >
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h2 className="text-xl font-semibold text-slate-900 group-hover:text-red-700 transition-colors">
-                    {role.title}
-                  </h2>
-                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                    {role.type}
-                  </span>
-                </div>
-                <p className="text-sm text-slate-600 mb-2">{role.description}</p>
-                <div className="flex items-center gap-4 text-xs text-slate-400">
-                  <span>{role.department}</span>
-                  <span aria-hidden="true">•</span>
-                  <span>{role.location}</span>
-                </div>
-              </div>
-              <a
-                href={mailtoHref}
-                className="inline-flex items-center justify-center rounded-xl bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
+              <div
+                key={role.id}
+                className="group rounded-2xl border border-slate-200 bg-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/5"
               >
-                Apply
-              </a>
-            </div>
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <h2 className="text-xl font-semibold text-slate-900 group-hover:text-red-700 transition-colors">
+                      {role.title}
+                    </h2>
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                      Full-time
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600 mb-2">{role.description}</p>
+                  <div className="flex items-center gap-4 text-xs text-slate-400">
+                    <span>{role.requirements?.[0] || 'Engineering'}</span>
+                    <span aria-hidden="true">•</span>
+                    <span>Kathmandu</span>
+                  </div>
+                </div>
+                <a
+                  href={mailtoHref}
+                  className="inline-flex items-center justify-center rounded-xl bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
+                >
+                  Apply
+                </a>
+              </div>
             );
           })}
         </div>

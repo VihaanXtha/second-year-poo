@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Review;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProductController extends Controller
 {
@@ -34,12 +36,23 @@ class ProductController extends Controller
             $query->where('price', '<=', $request->max_price);
         }
 
+        if ($request->has('spec')) {
+            foreach ($request->spec as $key => $value) {
+                if (!is_string($key) || $value === null || $value === '') {
+                    continue;
+                }
+                $query->where("specs->$key", '=', (string) $value);
+            }
+        }
+
         if ($request->has('sort')) {
             match ($request->sort) {
                 'price_asc' => $query->orderBy('price', 'asc'),
                 'price_desc' => $query->orderBy('price', 'desc'),
                 'newest' => $query->orderBy('created_at', 'desc'),
-                'popular' => $query->orderBy('stock', 'desc'),
+                'popular' => $query->withCount(['orderItems as total_sold' => function (Builder $query) {
+                    $query->selectRaw('COALESCE(SUM(quantity), 0)');
+                }])->orderBy('total_sold', 'desc'),
                 default => $query->orderBy('created_at', 'desc'),
             };
         } else {
@@ -64,8 +77,17 @@ class ProductController extends Controller
 
     public function categories()
     {
-        $categories = Category::orderBy('name')->get(['id', 'name', 'slug']);
+        $categories = Category::orderBy('name')->get(['id', 'name', 'slug', 'spec_schema']);
 
         return response()->json(['categories' => $categories]);
+    }
+
+    public function specSchema(Category $category)
+    {
+        return response()->json([
+            'id' => $category->id,
+            'name' => $category->name,
+            'spec_schema' => $category->spec_schema ?? [],
+        ]);
     }
 }

@@ -1,3 +1,18 @@
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  spec_schema?: CategorySpecField[];
+}
+
+export interface CategorySpecField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'select' | 'boolean';
+  unit?: string;
+  options?: string[];
+}
+
 export interface NavItem {
   id: string;
   label: string;
@@ -12,7 +27,8 @@ export interface Product {
   price: number;
   stock: number;
   category: string;
-  image_url?: string;
+  image?: string;
+  specs?: Record<string, unknown>;
   status?: 'active' | 'draft' | 'out_of_stock';
   created_at?: string;
   updated_at?: string;
