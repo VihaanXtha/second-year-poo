@@ -2,12 +2,24 @@
 
 set -e
 
-# Wait for MySQL to be ready
-echo "Waiting for MySQL to be ready..."
-until php -r "new PDO('mysql:host=${DB_HOST:-mysql};dbname=${DB_DATABASE:-circuit_bazaar}', '${DB_USERNAME:-circuit}', '${DB_PASSWORD:-circuit}');" 2>/dev/null; do
-    sleep 2
-done
-echo "MySQL is ready!"
+# Check database driver
+DB_CONNECTION=$(grep -o '^DB_CONNECTION=[^ ]*' /app/.env 2>/dev/null | cut -d= -f2 || echo "sqlite")
+
+if [ "$DB_CONNECTION" = "mysql" ]; then
+    echo "Waiting for MySQL to be ready..."
+    DB_HOST=$(grep -o '^DB_HOST=[^ ]*' /app/.env 2>/dev/null | cut -d= -f2 || echo "mysql")
+    DB_DATABASE=$(grep -o '^DB_DATABASE=[^ ]*' /app/.env 2>/dev/null | cut -d= -f2 || echo "circuit_bazaar")
+    DB_USERNAME=$(grep -o '^DB_USERNAME=[^ ]*' /app/.env 2>/dev/null | cut -d= -f2 || echo "circuit")
+    DB_PASSWORD=$(grep -o '^DB_PASSWORD=[^ ]*' /app/.env 2>/dev/null | cut -d= -f2 || echo "circuit")
+    until php -r "new PDO('mysql:host=${DB_HOST};dbname=${DB_DATABASE}', '${DB_USERNAME}', '${DB_PASSWORD}');" 2>/dev/null; do
+        sleep 2
+    done
+    echo "MySQL is ready!"
+else
+    echo "Using SQLite database, skipping MySQL wait..."
+    mkdir -p /app/storage/framework/{cache,sessions,views} /app/storage/logs /app/database
+    chmod -R 775 /app/storage /app/database
+fi
 
 # Create .env if it doesn't exist
 if [ ! -f /app/.env ]; then

@@ -6,7 +6,20 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=https://backendcircuit-production.up.railway.app/api
+    depends_on:
+      - backend
+    networks:
+      - circuit-bazaar
+
+  shop:
+    build:
+      context: ./shop
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=https://backendcircuit-production.up.railway.app/api
     depends_on:
       - backend
     networks:
@@ -19,7 +32,7 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=https://backendcircuit-production.up.railway.app/api
     networks:
       - circuit-bazaar
 
@@ -30,7 +43,7 @@ services:
     ports:
       - "3002:3002"
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=https://backendcircuit-production.up.railway.app/api
     networks:
       - circuit-bazaar
 
@@ -45,43 +58,11 @@ services:
     environment:
       - APP_ENV=local
       - APP_DEBUG=true
-      - DB_CONNECTION=mysql
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_DATABASE=circuit_bazaar
-      - DB_USERNAME=circuit
-      - DB_PASSWORD=circuit
+      - DB_CONNECTION=sqlite
+      - DB_PATH=database/database.sqlite
       - MAIL_FROM_ADDRESS=noreply@circuitbazaar.com
       - MAIL_FROM_NAME="Circuit Bazaar"
     command: sh -c "php artisan serve --host=0.0.0.0 --port=8000"
-    depends_on:
-      - mysql
-    networks:
-      - circuit-bazaar
-
-  mysql:
-    image: mysql:8.0
-    ports:
-      - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=circuit_bazaar
-      - MYSQL_USER=circuit
-      - MYSQL_PASSWORD=circuit
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - circuit-bazaar
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    ports:
-      - "8080:80"
-    environment:
-      - PMA_HOST=mysql
-      - MYSQL_ROOT_PASSWORD=root
-    depends_on:
-      - mysql
     networks:
       - circuit-bazaar
 
@@ -93,6 +74,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - frontend
+      - shop
       - admin
       - vendor
       - backend
@@ -100,7 +82,6 @@ services:
       - circuit-bazaar
 
 volumes:
-  mysql_data:
 
 networks:
   circuit-bazaar:

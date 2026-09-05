@@ -2,73 +2,95 @@
 
 A specification-first hardware marketplace for Nepal, built with Next.js 15, React 19, Tailwind CSS v4, and Laravel 13.
 
-## Prerequisites
+## Local Development (Monorepo)
 
-- Node.js 20+
-- npm 10+
-- PHP 8.3+
-- Composer 2+
-- Docker (optional, for containerized setup)
-
-## Local Development Setup
-
-### Frontend (Next.js)
+This repo is the **development monorepo**. Use Docker to run all services together locally:
 
 ```bash
-# Install dependencies
-cd frontend
-npm install
-
-# Run development server on port 3000
-npm run dev
-
-# Open http://localhost:3000
+docker compose up --build
 ```
 
-### Backend (Laravel)
+This starts:
+- **frontend** (Next.js) on `http://localhost:3000`
+- **shop** (Next.js) on `http://localhost:3003`
+- **admin** (Vite) on `http://localhost:3001`
+- **vendor** (Vite) on `http://localhost:3002`
+- **backend** (Laravel) on `http://localhost:8000`
+
+## Deployment (Separated)
+
+For production, each service is deployed independently:
+
+| Service | Repo | Hosting |
+|---------|------|---------|
+| **frontend** | `home.circuit` | Vercel |
+| **shop** | `shop.circuit` | Vercel |
+| **admin** | `admin.circuit` | Vercel |
+| **vendor** | `vender.circuit` | Vercel |
+| **backend** | `backend.circuit` | Railway |
+
+### Production URLs
+
+| Service | URL |
+|---------|-----|
+| **Frontend** | https://homecircuit.vercel.app |
+| **Shop** | https://shopcircuit-six.vercel.app |
+| **Admin** | https://admincircuit.vercel.app |
+| **Vendor** | https://vendercircuit.vercel.app |
+| **Backend** | https://backendcircuit-production.up.railway.app |
+
+### Backend (Railway)
+
+1. Push `backend/` folder to `https://github.com/VihaanXtha/backend.circuit.git`
+2. Connect repo to Railway
+3. Railway auto-detects Laravel and deploys via Dockerfile
+4. Backend URL: `https://backendcircuit-production.up.railway.app`
+
+> **Note:** Backend uses SQLite by default. If you add MySQL on Railway, update `.env` DB settings accordingly.
+
+### Frontends (Vercel)
+
+1. Push each frontend folder to its respective repo
+2. Connect repo to Vercel
+3. Vercel auto-detects framework and deploys
+ 4. Set `NEXT_PUBLIC_API_URL` environment variable in Vercel dashboard:
+    ```
+    https://backendcircuit-production.up.railway.app/api
+    ```
+
+### Pushing Folders to Separate Repos
 
 ```bash
-# Enter backend directory
-cd backend
+# Frontend → home.circuit
+git subtree split --prefix=frontend -b frontend-only
+git remote add home-circuit https://github.com/VihaanXtha/home.circuit.git
+git push home-circuit frontend-only:main
+git remote remove home-circuit
 
-# Install PHP dependencies
-composer install
+# Shop → shop.circuit
+git subtree split --prefix=shop -b shop-only
+git remote add shop-circuit https://github.com/VihaanXtha/shop.circuit.git
+git push shop-circuit shop-only:main
+git remote remove shop-circuit
 
-# Copy environment file
-copy .env.example .env
+# Admin → admin.circuit
+git subtree split --prefix=admin -b admin-only
+git remote add admin-circuit https://github.com/VihaanXtha/admin.circuit.git
+git push admin-circuit admin-only:main
+git remote remove admin-circuit
 
-# Generate app key
-php artisan key:generate
+# Vendor → vender.circuit
+git subtree split --prefix=vendor -b vendor-only
+git remote add vendor-circuit https://github.com/VihaanXtha/vender.circuit.git
+git push vendor-circuit vendor-only:main
+git remote remove vendor-circuit
 
-# Run migrations
-php artisan migrate
-
-# Start Laravel dev server on port 8000
-php artisan serve
-
-# API will be available at http://localhost:8000
+# Backend → backend.circuit
+git subtree split --prefix=backend -b backend-only
+git remote add backend-circuit https://github.com/VihaanXtha/backend.circuit.git
+git push backend-circuit backend-only:main
+git remote remove backend-circuit
 ```
-
-## Available Scripts
-
-### Frontend
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start Next.js dev server on port 3000 |
-| `npm run build` | Create production build |
-| `npm run start` | Start production server on port 3000 |
-| `npm run lint` | Run TypeScript type check (`tsc --noEmit`) |
-
-### Backend
-
-| Command | Description |
-|---------|-------------|
-| `php artisan serve` | Start Laravel dev server on port 8000 |
-| `php artisan migrate` | Run database migrations |
-| `php artisan make:model ModelName -mcr` | Create model, migration, controller, and seeder |
-| `php artisan tinker` | Interactive PHP shell |
-| `php artisan test` | Run PHPUnit tests |
 
 ## Tech Stack
 
@@ -81,152 +103,27 @@ php artisan serve
 
 ```
 second-year-poo/
-├── frontend/               # Next.js public marketplace + admin + vendor
-│   └── src/
-│       ├── app/
-│       │   ├── layout.tsx  # Root layout
-│       │   ├── page.tsx    # Public marketplace (/)
-│       │   ├── admin/      # Admin dashboard (/admin/*)
-│       │   │   ├── layout.tsx
-│       │   │   └── page.tsx
-│       │   └── vendor/     # Vendor portal (/vendor/*)
-│       │       ├── layout.tsx
-│       │       └── page.tsx
-│       ├── components/
-│       ├── context/
-│       ├── data/
-│       ├── types.ts
-│       └── App.tsx
-├── backend/                # Laravel 13 API
-│   ├── app/
-│   ├── routes/
-│   │   └── api.php
-│   └── ...
-├── nginx/
-│   └── nginx.conf          # Reverse proxy for subdomain routing
-├── docker-compose.yml      # Orchestrates nginx + frontend + backend
+├── frontend/               # Next.js public marketplace → home.circuit
+├── shop/                   # Next.js shop frontend → shop.circuit
+├── admin/                  # Vite admin dashboard → admin.circuit
+├── vendor/                 # Vite vendor dashboard → vender.circuit
+├── backend/                # Laravel 13 API → backend.circuit
+├── nginx/                  # Reverse proxy for local Docker
+├── docker-compose.yml      # Orchestrates all services locally
 └── README.md
-```
-
-## Subdomains
-
-The app uses one domain with subdomains, routed by nginx in Docker:
-
-| Subdomain | Service | Path | Description |
-|-----------|---------|------|-------------|
-| `baseurl` | Next.js | `/` | Public marketplace |
-| `admin.baseurl` | Next.js | `/admin/*` | Admin dashboard |
-| `vendor.baseurl` | Next.js | `/vendor/*` | Vendor portal |
-| `api.baseurl` | Laravel | `/api/*` | Backend API |
-
-## Docker Setup
-
-### Prerequisites
-
-- Docker Desktop installed and running
-- Add to your `hosts` file (optional, for local subdomain testing):
-  ```
-  127.0.0.1 baseurl.localhost
-  127.0.0.1 admin.baseurl.localhost
-  127.0.0.1 vendor.baseurl.localhost
-  127.0.0.1 api.baseurl.localhost
-  ```
-
-### Start All Services
-
-```bash
-docker compose up --build
-```
-
-This starts:
-- **nginx** on `http://localhost:80` (routes subdomains)
-- **frontend** (Next.js) on port 3000
-- **backend** (Laravel) on port 8000
-
-### Stop All Services
-
-```bash
-docker compose down
-```
-
-### How Docker Works
-
-The `docker-compose.yml` defines 3 services:
-
-1. **nginx** — Reverse proxy on port 80 that routes requests based on subdomain:
-   - `admin.*` → Next.js admin routes (`/admin/*`)
-   - `vendor.*` → Next.js vendor routes (`/vendor/*`)
-   - `api.*` → Laravel backend (`/api/*`)
-   - Everything else → Next.js public marketplace (`/`)
-
-2. **frontend** — Builds the Next.js app using the multi-stage `Dockerfile`:
-   - Stage 1: `deps` — installs npm dependencies with `npm ci`
-   - Stage 2: `builder` — copies source and runs `npm run build`
-   - Stage 3: `runner` — copies only compiled `.next/standalone` and `.next/static`, runs `node server.js`
-   - Exposes port 3000 internally
-
-3. **backend** — Builds Laravel API using `backend/Dockerfile`:
-   - Installs PHP extensions (pdo_sqlite, gd, mbstring, etc.)
-   - Installs Composer dependencies
-   - Runs `php artisan serve` on port 8000
-   - Persists `storage/` volume for SQLite database
-
-### Frontend Dockerfile
-
-```dockerfile
-FROM node:20-alpine AS base
-
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN mkdir -p public
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
-
-FROM base AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-COPY --from=builder /app/public ./public
-RUN mkdir .next && chown nextjs:nodejs .next
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-USER nextjs
-EXPOSE 3000
-CMD ["node", "server.js"]
 ```
 
 ## Authentication
 
-The app uses a client-side authentication system with `localStorage` persistence.
+Client-side auth with `localStorage` persistence. Each frontend app has its own `AuthContext`.
 
-### How It Works
+### Switching to Real Backend
 
-1. `AuthContext` (`frontend/src/context/AuthContext.tsx`) provides `user`, `isAuthenticated`, `login`, `signup`, and `logout`
-2. User session persists in `localStorage` under key `circuit-bazaar-auth`
-3. `Header` component shows "Sign In" when logged out, or a user dropdown with "Sign Out" when logged in
-4. Protected routes:
-   - **`/admin/*`** — admin dashboard (guarded by middleware)
-   - **`/vendor/*`** — vendor portal (guarded by middleware)
-   - **Cart checkout** — requires login before proceeding to payment
-   - **Vendor application** — requires login before submitting
-
-### Switching to a Real Backend
-
-To connect to the Laravel API, update the `login` and `signup` functions in `frontend/src/context/AuthContext.tsx`:
+Update the `login` and `signup` functions to call the Railway backend:
 
 ```typescript
 const login = async (email: string, password: string) => {
-  const response = await fetch('/api/auth/login', {
+  const response = await fetch('https://backendcircuit-production.up.railway.app/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -237,47 +134,22 @@ const login = async (email: string, password: string) => {
 };
 ```
 
-## Agentation (Visual Feedback Tool)
+## Docker Setup
 
-[Agentation](https://agentation.com) is an agent-agnostic visual feedback toolbar that lets you click elements on the page, add notes, and copy structured markdown for AI coding agents.
-
-### Setup
-
-`agentation` is already installed as a devDependency. It's wired into `frontend/src/app/layout.tsx` via `AgentationGuard`, which only renders on public routes:
-
-```tsx
-import { AgentationGuard } from "../components/AgentationGuard";
-
-// Inside <body>:
-<AgentationGuard />
-```
-
-### Usage
-
-1. Run `npm run dev`
-2. Open `http://localhost:3000`
-3. Click the Agentation icon in the bottom-right corner
-4. Hover over elements to highlight them
-5. Click any element to add an annotation with notes
-6. Copy the generated markdown and paste it into your AI agent
-
-### MCP Server (Optional, for Real-Time Sync)
-
-For real-time annotation syncing instead of copy-paste, set up the MCP server:
+### Start All Services
 
 ```bash
-# Universal setup (supports Claude Code, Cursor, Codex, Windsurf, etc.)
-npx add-mcp "npx -y agentation-mcp server"
-
-# Or for Claude Code specifically:
-npx agentation-mcp init
+docker compose up --build
 ```
 
-After setup, restart your coding agent. The server runs on port 4747 by default.
+### Stop All Services
+
+```bash
+docker compose down
+```
 
 ## Notes
 
-- **Single Next.js app** — public, admin, and vendor pages share one codebase via folder-based layouts
-- **Subdomain routing** — nginx routes `admin.*`, `vendor.*`, and `api.*` to the correct service
+- **Local:** Use docker-compose to run all services together
+- **Production:** Each service is deployed independently to Railway/Vercel
 - **Backend is Laravel 13** — see `backend/README.md` for backend-specific setup
-- **For local dev without Docker**, run `npm run dev` and `cd backend && php artisan serve` separately
