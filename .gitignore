@@ -35,3 +35,10 @@ backend/storage/pail
 .cache/
 .phpunit.result.cache
 .phpunit.cache
+
+# Tooling / local state
+.kilo/
+.playwright-mcp/
+assets/
+nginx/
+scripts/
