@@ -38,7 +38,7 @@ const initialStoreForm = (s?: any): StoreForm => ({
 });
 
 export function StorePage({ apiFetch }: StorePageProps) {
-  const { store, refreshStore } = useVendorAuth();
+  const { store, user, refreshStore } = useVendorAuth();
   const [form, setForm] = useState<StoreForm>(initialStoreForm(store));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -291,6 +291,63 @@ export function StorePage({ apiFetch }: StorePageProps) {
               </PrimaryButton>
             </div>
           </form>
+        </Card>
+
+        <Card className="lg:col-span-2" title="Registration details" subtitle="Information provided during vendor application">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Full Name</p>
+              <p className="font-bold text-slate-900">{user?.name || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Email</p>
+              <p className="font-bold text-slate-900">{user?.email || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Phone</p>
+              <p className="font-bold text-slate-900">{store?.phone || user?.phone || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">PAN Number</p>
+              <p className="font-bold text-slate-900">{store?.pan_number || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 md:col-span-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Store Address</p>
+              <p className="font-bold text-slate-900">{store?.address || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Country</p>
+              <p className="font-bold text-slate-900">{store?.country || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Province</p>
+              <p className="font-bold text-slate-900">{store?.province || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">District</p>
+              <p className="font-bold text-slate-900">{store?.district || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Municipality</p>
+              <p className="font-bold text-slate-900">{store?.municipality || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Ward</p>
+              <p className="font-bold text-slate-900">{store?.ward || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Postal Code</p>
+              <p className="font-bold text-slate-900">{store?.postal_code || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Experience</p>
+              <p className="font-bold text-slate-900">{store?.experience || '-'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Website</p>
+              <p className="font-bold text-slate-900">{store?.website || '-'}</p>
+            </div>
+          </div>
         </Card>
 
         <div className="space-y-6">

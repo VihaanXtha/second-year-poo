@@ -41,4 +41,9 @@ return [
         'from' => env('TWILIO_FROM'),
     ],
 
+    'smskit' => [
+        'api_key' => env('SMSKIT_API_KEY'),
+        'sender_id' => env('SMSKIT_SENDER_ID'),
+    ],
+
 ];

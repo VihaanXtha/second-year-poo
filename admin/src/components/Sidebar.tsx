@@ -20,6 +20,7 @@ import {
   Image,
   Shield,
   Star,
+  LayoutTemplate,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ElementType> = {
@@ -38,6 +39,7 @@ const iconMap: Record<string, React.ElementType> = {
   Image,
   Shield,
   Star,
+  LayoutTemplate,
   ChevronDown,
   ChevronLeft,
   Menu,
@@ -53,6 +55,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, collapsed, setCollapsed }) => {
   const [usersOpen, setUsersOpen] = React.useState(false);
+  const [cmsOpen, setCmsOpen] = React.useState(false);
 
   const userTabs = [
     { id: 'customers', label: 'Customers', icon: Users },
@@ -60,7 +63,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, colla
     { id: 'admins', label: 'Admins', icon: Shield },
   ];
 
+  const cmsTabs = [
+    { id: 'sliders', label: 'Homepage Sliders', icon: Image },
+    { id: 'blog', label: 'Blog Posts', icon: BlogIcon },
+    { id: 'careers', label: 'Job Postings', icon: Briefcase },
+    { id: 'testimonials', label: 'Testimonials', icon: Star },
+  ];
+
   const isUsersActive = userTabs.some(tab => tab.id === activeNav);
+  const isCmsActive = cmsTabs.some(tab => tab.id === activeNav);
 
   return (
     <aside
@@ -103,7 +114,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, colla
       <nav className="flex-1 overflow-y-auto px-2 space-y-1 min-h-0 scrollbar-thin">
         {[
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         ].map((item) => {
           const Icon = item.icon;
           return (
@@ -169,13 +179,72 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, colla
         {[
           { id: 'products', label: 'Products', icon: Package },
           { id: 'categories', label: 'Categories', icon: FolderTree },
-          { id: 'blog', label: 'Blog Posts', icon: BlogIcon },
-          { id: 'careers', label: 'Job Postings', icon: Briefcase },
-          { id: 'testimonials', label: 'Testimonials', icon: Star },
-          { id: 'courier', label: 'Courier Info', icon: Truck },
-          { id: 'sliders', label: 'Homepage Sliders', icon: Image },
           { id: 'orders', label: 'Orders', icon: ShoppingCart },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveNav(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeNav === item.id
+                  ? 'bg-red-50 text-primary border border-red-100'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              } ${collapsed ? 'justify-center' : ''}`}
+              title={collapsed ? item.label : undefined}
+            >
+              <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+              {!collapsed && <span>{item.label}</span>}
+            </button>
+          );
+        })}
+
+        {/* CMS dropdown */}
+        <div className="space-y-1">
+          <button
+            onClick={() => !collapsed && setCmsOpen(!cmsOpen)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+              isCmsActive
+                ? 'bg-red-50 text-primary border border-red-100'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+            } ${collapsed ? 'justify-center' : ''}`}
+            title={collapsed ? 'CMS' : undefined}
+          >
+            <LayoutTemplate className="w-[18px] h-[18px] flex-shrink-0" />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left">CMS</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${cmsOpen ? 'rotate-180' : ''}`} />
+              </>
+            )}
+          </button>
+
+          {!collapsed && cmsOpen && (
+            <div className="ml-4 space-y-1 border-l border-slate-200 pl-3">
+              {cmsTabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveNav(tab.id)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      activeNav === tab.id
+                        ? 'bg-red-50 text-primary border border-red-100'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {[
           { id: 'sales', label: 'Sales Reports', icon: FileText },
+          { id: 'courier', label: 'Courier Info', icon: Truck },
           { id: 'settings', label: 'Settings', icon: Settings },
         ].map((item) => {
           const Icon = item.icon;

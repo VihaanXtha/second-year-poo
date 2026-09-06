@@ -250,7 +250,7 @@ export default function VendorApplyPage() {
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
               <h3 className="text-lg font-semibold text-slate-900 mb-2">Verify your email</h3>
               <p className="text-sm text-slate-600 mb-4">
-                We have sent a 6-digit OTP to <span className="font-semibold">{form.email}</span>. The code is valid for 2 minutes.
+                We have sent a 6-digit OTP to <span className="font-semibold">{form.email}</span>. The code is valid for 5 minutes.
               </p>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">OTP Code</label>

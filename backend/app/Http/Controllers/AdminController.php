@@ -104,7 +104,10 @@ class AdminController extends Controller
 
     public function vendors(Request $request)
     {
-        $query = VendorStore::query()->with('user');
+        $query = VendorStore::query()
+            ->where('verified', true)
+            ->orWhere('status', 'active')
+            ->with('user');
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -119,6 +122,39 @@ class AdminController extends Controller
         }
 
         $vendors = $query->latest()->paginate(15);
+
+        $vendors->getCollection()->transform(function ($store) {
+            return [
+                'id' => $store->user->id,
+                'name' => $store->user->name,
+                'email' => $store->user->email,
+                'role' => $store->user->role,
+                'status' => $store->status,
+                'created_at' => $store->user->created_at,
+                'store_name' => $store->store_name,
+                'products_count' => 0,
+                'total_sales' => 0,
+                'description' => $store->description,
+                'address' => $store->address,
+                'phone' => $store->phone,
+                'pan_number' => $store->pan_number,
+                'country' => $store->country,
+                'province' => $store->province,
+                'district' => $store->district,
+                'municipality' => $store->municipality,
+                'ward' => $store->ward,
+                'postal_code' => $store->postal_code,
+                'user_phone' => $store->user->phone,
+                'user_address' => $store->user->address,
+                'user_city' => $store->user->city,
+                'user_province' => $store->user->province,
+                'user_district' => $store->user->district,
+                'user_municipality' => $store->user->municipality,
+                'user_ward' => $store->user->ward,
+                'user_postal_code' => $store->user->postal_code,
+                'user_country' => $store->user->country,
+            ];
+        });
 
         return response()->json($vendors);
     }

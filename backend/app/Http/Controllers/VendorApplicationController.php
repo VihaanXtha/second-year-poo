@@ -7,6 +7,7 @@ use App\Models\OtpCode;
 use App\Models\User;
 use App\Models\VendorApplication;
 use App\Models\VendorStore;
+use App\Services\SmsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -47,7 +48,7 @@ class VendorApplicationController extends Controller
 
         $application = VendorApplication::create(array_merge($validated, [
             'otp_code' => $code,
-            'otp_expires_at' => Carbon::now()->addMinutes(2),
+            'otp_expires_at' => Carbon::now()->addMinutes(5),
             'status' => 'pending',
         ]));
 
@@ -79,6 +80,42 @@ class VendorApplicationController extends Controller
 
         $application->update(['otp_verified_at' => Carbon::now(), 'status' => 'verified']);
 
+        return $this->createVendorAccount($application);
+    }
+
+    public function resendOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $application = VendorApplication::where('email', $validated['email'])
+            ->where('status', '!=', 'rejected')
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $application) {
+            return response()->json(['message' => 'No pending application found for this email.'], 404);
+        }
+
+        if ($application->otp_verified_at) {
+            return response()->json(['message' => 'Email is already verified.'], 422);
+        }
+
+        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        $application->update([
+            'otp_code' => $code,
+            'otp_expires_at' => Carbon::now()->addMinutes(5),
+        ]);
+
+        Mail::to($application->email)->send(new OtpMail($code, 'vendor_application'));
+
+        return response()->json(['message' => 'OTP resent to your email.']);
+    }
+
+    private function createVendorAccount(VendorApplication $application)
+    {
         $tempPassword = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         $user = User::create([
@@ -113,33 +150,5 @@ class VendorApplicationController extends Controller
         return response()->json([
             'message' => 'Email verified successfully. Your vendor account is pending admin approval. Credentials have been sent to your email.',
         ]);
-    }
-
-    public function resendOtp(Request $request)
-    {
-        $validated = $request->validate([
-            'email' => ['required', 'email'],
-        ]);
-
-        $application = VendorApplication::where('email', $validated['email'])
-            ->where('status', 'pending')
-            ->where('otp_verified_at', null)
-            ->orderByDesc('id')
-            ->first();
-
-        if (! $application) {
-            return response()->json(['message' => 'No pending application found for this email.'], 404);
-        }
-
-        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-        $application->update([
-            'otp_code' => $code,
-            'otp_expires_at' => Carbon::now()->addMinutes(2),
-        ]);
-
-        Mail::to($application->email)->send(new OtpMail($code, 'vendor_application'));
-
-        return response()->json(['message' => 'OTP resent to your email.']);
     }
 }

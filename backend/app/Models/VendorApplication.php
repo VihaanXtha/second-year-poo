@@ -31,5 +31,7 @@ class VendorApplication extends Model
     protected $casts = [
         'otp_expires_at' => 'datetime',
         'otp_verified_at' => 'datetime',
+        'phone_otp_expires_at' => 'datetime',
+        'phone_otp_verified_at' => 'datetime',
     ];
 }

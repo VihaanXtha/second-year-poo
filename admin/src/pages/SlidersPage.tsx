@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X, Pencil } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
 import { Modal } from '../components/Modal';
@@ -116,7 +116,7 @@ export function SlidersPage({ apiFetch }: { apiFetch: ApiFetch }) {
           )},
           { key: 'actions', header: 'Actions', className: 'text-right', render: (item: HomepageSlider) => (
             <div className="flex items-center justify-end gap-1">
-              <button onClick={() => openEdit(item)} className="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-red-50 transition-colors"><Eye className="w-4 h-4" /></button>
+              <button onClick={() => openEdit(item)} className="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-red-50 transition-colors"><Pencil className="w-4 h-4" /></button>
               <button onClick={() => handleDelete(item.id)} className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"><Trash2 className="w-4 h-4" /></button>
             </div>
           )},

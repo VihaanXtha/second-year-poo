@@ -7,6 +7,7 @@ export interface VendorUser {
   role: string;
   status: string;
   email_verified: boolean;
+  phone?: string;
 }
 
 export interface VendorStore {
@@ -24,6 +25,15 @@ export interface VendorStore {
   total_products?: number;
   total_orders?: number;
   total_revenue?: number;
+  pan_number?: string;
+  country?: string;
+  province?: string;
+  district?: string;
+  municipality?: string;
+  ward?: string;
+  postal_code?: string;
+  experience?: string;
+  website?: string;
 }
 
 interface AuthContextType {
@@ -92,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: data.user.role,
       status: data.user.status || 'active',
       email_verified: !!data.user.email_verified,
+      phone: data.user.phone,
     };
 
     const storeData: VendorStore | null = data.store
@@ -110,6 +121,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           total_products: data.store.total_products,
           total_orders: data.store.total_orders,
           total_revenue: data.store.total_revenue,
+          pan_number: data.store.pan_number,
+          country: data.store.country,
+          province: data.store.province,
+          district: data.store.district,
+          municipality: data.store.municipality,
+          ward: data.store.ward,
+          postal_code: data.store.postal_code,
+          experience: data.store.experience,
+          website: data.store.website,
         }
       : null;
 
