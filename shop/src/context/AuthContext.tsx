@@ -48,6 +48,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     setHydrated(true);
+    
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      const userId = urlParams.get('user_id');
+      const requiresProfileCompletion = urlParams.get('requires_profile_completion');
+      const requiresPhoneVerification = urlParams.get('requires_phone_verification');
+      
+      if (token) {
+        localStorage.setItem('circuit-bazaar-token', token);
+        if (userId) {
+          const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+          if (stored) {
+            try {
+              const userData = JSON.parse(stored) as User;
+              if (String(userData.id) === userId) {
+                setUser(userData);
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+        
+        if (requiresProfileCompletion || requiresPhoneVerification) {
+          window.history.replaceState({}, '', '/account');
+        }
+      }
+    }
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {

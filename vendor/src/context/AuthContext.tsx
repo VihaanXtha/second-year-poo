@@ -50,9 +50,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function getApiUrl(): string {
-  const envUrl = (import.meta as any).env?.VITE_API_URL as string | undefined;
-  if (envUrl) return envUrl;
-  return 'https://backendcircuit-production.up.railway.app/api';
+  return 'http://localhost:8000/api';
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

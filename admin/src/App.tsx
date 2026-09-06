@@ -15,6 +15,7 @@ import { JobPostingsPage } from './pages/JobPostingsPage';
 import { TestimonialsPage } from './pages/TestimonialsPage';
 import { CourierPage } from './pages/CourierPage';
 import { SlidersPage } from './pages/SlidersPage';
+import Settings from './pages/Settings';
 import { Login } from './pages/Login';
 import { useAdminAuth } from './context/AuthContext';
 import { getAdminToken, getApiUrl } from './context/AuthContext';
@@ -110,14 +111,7 @@ export default function App() {
       case 'sliders':
         return <SlidersPage apiFetch={apiFetch} />;
       case 'settings':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
-            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
-              <p className="text-slate-500">Settings panel coming soon.</p>
-            </div>
-          </div>
-        );
+        return <Settings />;
       default:
         return <Dashboard apiFetch={apiFetch} />;
     }

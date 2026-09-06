@@ -11,6 +11,7 @@
         "laravel/framework": "^13.8",
         "laravel/reverb": "*",
         "laravel/sanctum": "*",
+        "laravel/socialite": "*",
         "laravel/tinker": "^3.0"
     },
     "require-dev": {

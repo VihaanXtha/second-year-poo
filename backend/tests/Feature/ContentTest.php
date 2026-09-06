@@ -55,6 +55,7 @@ class ContentTest extends TestCase
         $response = $this->postJson('/api/admin/content/blog', [
             'title' => 'Test Blog Post',
             'slug' => 'test-blog-post',
+            'category' => 'Technology',
             'body' => 'This is the body of the blog post.',
             'is_published' => true,
         ]);
@@ -76,6 +77,7 @@ class ContentTest extends TestCase
         $response = $this->putJson("/api/admin/content/blog/{$post->id}", [
             'title' => 'Updated Title',
             'slug' => $post->slug,
+            'category' => $post->category ?? 'Technology',
             'body' => 'Updated body.',
         ]);
 

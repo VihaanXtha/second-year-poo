@@ -104,18 +104,5 @@ export function getAdminToken(): string | null {
 }
 
 export function getApiUrl(): string {
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl) return envUrl;
-
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host === 'admin.localhost' || host === 'vendor.localhost' || host.includes('baseurl.localhost')) {
-      return 'http://api.localhost';
-    }
-    if (host === 'localhost' || host === '127.0.0.1') {
-      return 'http://localhost:8000';
-    }
-  }
-
-  return 'http://api.localhost';
+  return 'http://localhost:8000/api';
 }

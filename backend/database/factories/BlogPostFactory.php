@@ -16,7 +16,7 @@ class BlogPostFactory extends Factory
             'slug' => fake()->unique()->slug(),
             'cover_image' => fake()->optional()->imageUrl(),
             'body' => fake()->paragraphs(3, true),
-            'excerpt' => fake()->sentence(),
+            'category' => fake()->randomElement(['Technology', 'Business', 'Science', 'Health']),
             'published_at' => fake()->dateTimeThisYear(),
             'is_published' => true,
         ];

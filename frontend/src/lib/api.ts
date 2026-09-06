@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backendcircuit-production.up.railway.app/api';
+const API_URL = 'http://localhost:8000/api';
 
 export async function apiClient<T = unknown>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;

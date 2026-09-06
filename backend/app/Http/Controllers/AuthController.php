@@ -9,23 +9,47 @@ use App\Models\VendorStore;
 use App\Services\SmsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
+    private const OTP_EXPIRY_MINUTES = 5;
+
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:20', 'unique:users,phone'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'channel' => ['required', 'in:email,phone'],
             'address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:100'],
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            $hasEmail = ! empty($request->email);
+            $hasPhone = ! empty($request->phone);
+
+            if ($request->channel === 'email' && ! $hasEmail) {
+                $validator->errors()->add('email', 'Email is required when channel is email.');
+            }
+
+            if ($request->channel === 'phone' && ! $hasPhone) {
+                $validator->errors()->add('phone', 'Phone is required when channel is phone.');
+            }
+
+            if (! $hasEmail && ! $hasPhone) {
+                $validator->errors()->add('email', 'Either email or phone is required.');
+                $validator->errors()->add('phone', 'Either email or phone is required.');
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
@@ -34,6 +58,7 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'address' => $request->address,
             'city' => $request->city,
@@ -43,15 +68,32 @@ class AuthController extends Controller
             'status' => 'active',
         ]);
 
-        $this->generateAndSendOtp($user->email, null, 'email_verification');
+        if ($request->channel === 'email') {
+            $this->generateAndSendOtp($user->email, $user->id, 'email_verification');
+        } elseif ($request->channel === 'phone' && $user->phone) {
+            $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+            OtpCode::create([
+                'user_id' => $user->id,
+                'phone' => $user->phone,
+                'code' => $code,
+                'type' => 'phone_verification',
+                'expires_at' => Carbon::now()->addMinutes(self::OTP_EXPIRY_MINUTES),
+            ]);
+
+            $sms = new SmsService;
+            $sms->sendOtp($user->phone, $code);
+        }
 
         return response()->json([
-            'message' => 'Registration successful. Please verify your email.',
+            'message' => 'Registration successful. Please verify your '.($request->channel === 'email' ? 'email' : 'phone').'.',
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'role' => $user->role,
+                'channel' => $request->channel,
             ],
         ], 201);
     }
@@ -90,20 +132,58 @@ class AuthController extends Controller
         $otp->update(['verified_at' => Carbon::now()]);
         $user->update(['email_verified_at' => Carbon::now()]);
 
-        return response()->json(['message' => 'Email verified successfully.']);
+        $token = null;
+        if ($user->phone_verified_at) {
+            $token = $user->createToken('auth_token')->plainTextToken;
+        }
+
+        return response()->json([
+            'message' => 'Email verified successfully.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'email_verified' => true,
+                'phone_verified' => ! is_null($user->phone_verified_at),
+            ],
+            'token' => $token,
+        ]);
     }
 
     public function sendPhoneOtp(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => ['required', 'exists:users,id'],
+            'user_id' => ['nullable', 'exists:users,id'],
+            'email' => ['nullable', 'email'],
+            'phone' => ['nullable', 'string', 'max:20'],
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            if (! $request->user_id && ! $request->email) {
+                $validator->errors()->add('user_id', 'Either user_id or email is required.');
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::findOrFail($request->user_id);
+        $user = null;
+        if ($request->user_id) {
+            $user = User::findOrFail($request->user_id);
+        } elseif ($request->email) {
+            $user = User::where('email', $request->email)->first();
+        }
+
+        if (! $user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        if ($request->filled('phone')) {
+            $user->update(['phone' => $request->phone]);
+        }
 
         if (! $user->phone) {
             return response()->json(['message' => 'Phone number not provided.'], 422);
@@ -116,7 +196,7 @@ class AuthController extends Controller
             'phone' => $user->phone,
             'code' => $code,
             'type' => 'phone_verification',
-            'expires_at' => Carbon::now()->addMinutes(10),
+            'expires_at' => Carbon::now()->addMinutes(self::OTP_EXPIRY_MINUTES),
         ]);
 
         $sms = new SmsService;
@@ -164,7 +244,21 @@ class AuthController extends Controller
         $otp->update(['verified_at' => Carbon::now()]);
         $user->update(['phone_verified_at' => Carbon::now()]);
 
-        return response()->json(['message' => 'Phone number verified successfully.']);
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Phone number verified successfully.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'email_verified' => ! is_null($user->email_verified_at),
+                'phone_verified' => true,
+            ],
+            'token' => $token,
+        ]);
     }
 
     public function resendOtp(Request $request)
@@ -185,7 +279,7 @@ class AuthController extends Controller
         }
 
         if ($request->type === 'email_verification') {
-            $this->generateAndSendOtp($user->email, null, 'email_verification');
+            $this->generateAndSendOtp($user->email, $user->id, 'email_verification');
 
             return response()->json(['message' => 'OTP sent to your email.']);
         }
@@ -198,8 +292,19 @@ class AuthController extends Controller
                 'phone' => $user->phone,
                 'code' => $code,
                 'type' => 'phone_verification',
-                'expires_at' => Carbon::now()->addMinutes(10),
+                'expires_at' => Carbon::now()->addMinutes(self::OTP_EXPIRY_MINUTES),
             ]);
+
+            $sms = new SmsService;
+            $sent = $sms->sendOtp($user->phone, $code);
+
+            if (! $sent) {
+                return response()->json([
+                    'message' => 'OTP generated but SMS delivery failed. Please try again.',
+                    'phone' => $this->maskPhone($user->phone),
+                    'dev_code' => $code,
+                ], 422);
+            }
 
             return response()->json([
                 'message' => 'OTP sent to your phone number.',
@@ -219,18 +324,29 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => ['required', 'email'],
+            'identifier' => ['nullable', 'string'],
+            'email' => ['nullable', 'email'],
             'password' => ['required', 'string'],
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            if (! $request->filled('identifier') && ! $request->filled('email')) {
+                $validator->errors()->add('identifier', 'Either identifier or email is required.');
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $identifier = $request->identifier ?: $request->email;
+
+        $user = User::where('email', $identifier)
+            ->orWhere('phone', $identifier)
+            ->first();
 
         if (! $user) {
-            return response()->json(['message' => 'Email not found.'], 404);
+            return response()->json(['message' => 'No account found with that identifier.'], 404);
         }
 
         if (! Hash::check($request->password, $user->password)) {
@@ -241,6 +357,22 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account has been banned.'], 403);
         }
 
+        if (! $user->phone_verified_at) {
+            return response()->json([
+                'message' => 'Phone verification is required before login.',
+                'requires_phone_verification' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                    'email_verified' => ! is_null($user->email_verified_at),
+                    'phone_verified' => false,
+                ],
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -249,15 +381,69 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'role' => $user->role,
                 'address' => $user->address,
                 'city' => $user->city,
                 'postal_code' => $user->postal_code,
                 'country' => $user->country,
                 'email_verified' => ! is_null($user->email_verified_at),
+                'phone_verified' => ! is_null($user->phone_verified_at),
             ],
             'token' => $token,
         ]);
+    }
+
+    public function googleRedirect(Request $request)
+    {
+        $request->session()->put('google_auth_redirect_url', $request->input('redirect_to'));
+
+        return Socialite::driver('google')->redirect();
+    }
+
+    public function googleCallback(Request $request)
+    {
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (\Throwable $e) {
+            $redirectUrl = $request->session()->pull('google_auth_redirect_url', null) ?? env('APP_URL');
+            return redirect($redirectUrl.'?error=google_auth_failed');
+        }
+
+        $user = User::where('google_id', $googleUser->getId())
+            ->orWhere('email', $googleUser->getEmail())
+            ->first();
+
+        if (! $user) {
+            $user = User::create([
+                'name' => $googleUser->getName(),
+                'email' => $googleUser->getEmail(),
+                'google_id' => $googleUser->getId(),
+                'password' => Hash::make(bin2hex(random_bytes(16))),
+                'role' => 'customer',
+                'status' => 'active',
+            ]);
+        } elseif (! $user->google_id) {
+            $user->update(['google_id' => $googleUser->getId()]);
+        }
+
+        $isNew = ! $user->phone_verified_at && ! $user->address;
+
+        if ($isNew || ! $user->phone_verified_at) {
+            $token = $user->createToken('auth_token')->plainTextToken;
+            $redirectUrl = $request->session()->pull('google_auth_redirect_url', null) ?? env('APP_URL');
+            
+            if ($isNew) {
+                return redirect("{$redirectUrl}?token={$token}&user_id={$user->id}&requires_profile_completion=1");
+            }
+            
+            return redirect("{$redirectUrl}?token={$token}&user_id={$user->id}&requires_phone_verification=1");
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+        $redirectUrl = $request->session()->pull('google_auth_redirect_url', null) ?? env('APP_URL');
+
+        return redirect("{$redirectUrl}?token={$token}&user_id={$user->id}");
     }
 
     public function vendorLogin(Request $request)
@@ -289,7 +475,6 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account has been banned.'], 403);
         }
 
-        // Only verified vendors can login
         $store = VendorStore::where('user_id', $user->id)->first();
 
         if (! $store) {
@@ -411,6 +596,7 @@ class AuthController extends Controller
             'city' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:100'],
+            'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
         if ($validator->fails()) {
@@ -423,7 +609,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'User not found.'], 404);
         }
 
-        $user->update($request->only(['address', 'city', 'postal_code', 'country']));
+        $user->update($request->only(['address', 'city', 'postal_code', 'country', 'phone']));
 
         return response()->json([
             'message' => 'Profile updated successfully.',
@@ -460,6 +646,7 @@ class AuthController extends Controller
                 'postal_code' => $request->user()->postal_code,
                 'country' => $request->user()->country,
                 'email_verified' => ! is_null($request->user()->email_verified_at),
+                'phone_verified' => ! is_null($request->user()->phone_verified_at),
             ],
         ]);
     }
@@ -473,7 +660,7 @@ class AuthController extends Controller
             'email' => $email,
             'code' => $code,
             'type' => $type,
-            'expires_at' => Carbon::now()->addMinutes(10),
+            'expires_at' => Carbon::now()->addMinutes(self::OTP_EXPIRY_MINUTES),
         ]);
 
         if ($email) {

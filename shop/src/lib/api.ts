@@ -1,5 +1,4 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://backendcircuit-production.up.railway.app/api';
+export const API_URL = 'http://localhost:8000/api';
 
 const TOKEN_KEY = 'circuit-bazaar-token';
 

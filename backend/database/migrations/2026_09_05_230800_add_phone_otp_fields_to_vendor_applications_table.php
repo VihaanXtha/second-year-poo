@@ -12,9 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('vendor_applications', function (Blueprint $table) {
-            $table->string('phone_otp_code')->nullable()->after('otp_verified_at');
-            $table->timestamp('phone_otp_expires_at')->nullable()->after('phone_otp_code');
-            $table->timestamp('phone_otp_verified_at')->nullable()->after('phone_otp_expires_at');
+            if (! Schema::hasColumn('vendor_applications', 'phone_otp_code')) {
+                $table->string('phone_otp_code')->nullable()->after('otp_verified_at');
+            }
+            if (! Schema::hasColumn('vendor_applications', 'phone_otp_expires_at')) {
+                $table->timestamp('phone_otp_expires_at')->nullable()->after('phone_otp_code');
+            }
+            if (! Schema::hasColumn('vendor_applications', 'phone_otp_verified_at')) {
+                $table->timestamp('phone_otp_verified_at')->nullable()->after('phone_otp_expires_at');
+            }
         });
     }
 

@@ -6,20 +6,21 @@ import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, googleLogin } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push(redirect);
+      const shopUrl = process.env.NEXT_PUBLIC_SHOP_URL || 'https://shopcircuit-production.up.railway.app';
+      window.location.href = `${shopUrl}/account`;
     }
-  }, [isAuthenticated, router, redirect]);
+  }, [isAuthenticated]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,17 +28,29 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password);
-      router.push(redirect);
+      await login(identifier, password);
+      const shopUrl = process.env.NEXT_PUBLIC_SHOP_URL || 'https://shopcircuit-production.up.railway.app';
+      window.location.href = `${shopUrl}/account`;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      if (err instanceof Error && err.message === 'PHONE_VERIFICATION_REQUIRED') {
+        setError("Phone verification is required. Please check your email for the verification link.");
+      } else {
+        setError(err instanceof Error ? err.message : "Login failed");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogle = () => {
-    setError("Google sign-in is not configured yet.");
+  const handleGoogle = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await googleLogin();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed");
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,7 +71,8 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={handleGoogle}
-            className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -74,19 +88,20 @@ export default function LoginPage() {
               <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-slate-500">Or continue with email</span>
+              <span className="bg-white px-2 text-slate-500">Or continue with email or phone</span>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email or Phone</label>
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:border-red-500"
+                placeholder="you@example.com or 9841234567"
               />
             </div>
 

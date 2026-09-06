@@ -8,15 +8,16 @@
 
 Circuit Bazaar is a multi-role hardware marketplace for Nepal with three frontends and one backend:
 
-| Service | Tech Stack | Port | Subdomain | Description |
-|---------|-----------|------|-----------|-------------|
-| **frontend** | Next.js 15 (App Router), React 19, Tailwind v4 | 3000 | `baseurl` | Public marketplace for customers |
-| **admin** | Vite 5, React 19, Tailwind v4, Recharts | 3001 | `admin.*` | Admin dashboard for platform management |
-| **vendor** | Vite 5, React 19, Tailwind v4, Recharts | 3002 | `vendor.*` | Vendor dashboard for store management |
-| **backend** | Laravel 13, PHP 8.3+, Sanctum | 8000 | `api.*` | REST API with role-based access |
-| **mysql** | MySQL 8.0 | 3306 (internal) | — | Primary database |
+| Service | Tech Stack | Port | URL | Description |
+|---------|-----------|------|-----|-------------|
+| **frontend** | Next.js 15 (App Router), React 19, Tailwind v4 | 3000 | http://localhost:3000 | Public marketplace for customers |
+| **admin** | Vite 5, React 19, Tailwind v4, Recharts | 3001 | http://localhost:3001 | Admin dashboard for platform management |
+| **vendor** | Vite 5, React 19, Tailwind v4, Recharts | 3002 | http://localhost:3002 | Vendor dashboard for store management |
+| **shop** | Next.js 15 (App Router), React 19, Tailwind v4 | 3003 | http://localhost:3003 | Shop frontend for authenticated users |
+| **backend** | Laravel 13, PHP 8.3+, Sanctum | 8000 | http://localhost:8000 | REST API with role-based access |
+| **mysql** | MySQL 8.0 | 3306 | localhost:3306 | Primary database |
 
-**All services are orchestrated by docker-compose behind an nginx reverse proxy.**
+**Each service runs independently. No Docker. No reverse proxy.**
 
 ---
 
@@ -24,26 +25,36 @@ Circuit Bazaar is a multi-role hardware marketplace for Nepal with three fronten
 
 ```
 second-year-poo/
-├── docker-compose.yml       # Orchestrates nginx + frontend + admin + vendor + backend + mysql
 ├── ARCHITECTURE.md          # THIS FILE — read first!
 ├── README.md                # Quick-start guide
-├── nginx/
-│   └── nginx.conf           # Reverse proxy: routes subdomains to services
+├── SYSTEM_FLOW.md           # Master system flow diagram
+├── FLOW_OF_FRONTEND.md      # Frontend app detailed flow
+├── FLOW_OF_SHOP.md          # Shop app detailed flow
+├── FLOW_OF_ADMIN.md         # Admin dashboard detailed flow
+├── FLOW_OF_VENDOR.md        # Vendor dashboard detailed flow
+├── FLOW_OF_BACKEND.md       # Backend API detailed flow
 ├── frontend/                # Next.js public marketplace
-│   ├── Dockerfile
-│   ├── next.config.mjs      # output: 'standalone' for Docker
-│   ├── .env                 # NEXT_PUBLIC_API_URL=http://api.localhost
+│   ├── .env                 # NEXT_PUBLIC_API_URL=http://localhost:8000/api
 │   └── src/
 │       ├── app/             # Next.js App Router (page.tsx, auth/*, explore/*)
-│       ├── components/      # App.tsx, Header.tsx, ProductCatalog, modals, etc.
+│       ├── components/      # UI components
 │       ├── context/
 │       │   └── AuthContext.tsx  # Client-side auth (localStorage)
-│       ├── data/
-│       │   └── hardwareData.ts  # Mock product/vendor data
+│       ├── lib/
+│       │   └── api.ts       # API client
 │       └── types.ts
-├── admin/                   # Standalone Vite admin SPA
-│   ├── Dockerfile
-│   ├── index.html
+├── shop/                    # Next.js shop frontend
+│   ├── .env                 # NEXT_PUBLIC_API_URL=http://localhost:8000/api
+│   └── src/
+│       ├── app/             # Next.js App Router
+│       ├── components/      # UI components
+│       ├── context/
+│       │   └── AuthContext.tsx  # Shop auth (localStorage + URL token)
+│       ├── lib/
+│       │   └── api.ts       # API client
+│       └── types.ts
+├── admin/                   # Vite admin SPA
+│   ├── .env                 # VITE_API_URL=http://localhost:8000/api
 │   └── src/
 │       ├── App.tsx          # Admin shell with auth guard + role check
 │       ├── main.tsx
@@ -51,14 +62,10 @@ second-year-poo/
 │       ├── context/
 │       │   └── AuthContext.tsx  # Admin auth (localStorage + role check)
 │       ├── components/      # Sidebar, Header, StatCard, charts, tables
-│       ├── pages/           # Login, Dashboard, Analytics, UsersPage, ProductsPage, OrdersPage
-│       ├── data/
-│       │   └── mockData.ts  # Only navItems (data now from backend)
+│       ├── pages/           # Login, Dashboard, Analytics, etc.
 │       └── types/
-│           └── index.ts
-├── vendor/                  # Standalone Vite vendor SPA
-│   ├── Dockerfile
-│   ├── index.html
+├── vendor/                  # Vite vendor SPA
+│   ├── .env                 # VITE_API_URL=http://localhost:8000/api
 │   └── src/
 │       ├── App.tsx          # Vendor shell with auth guard + role check
 │       ├── main.tsx
@@ -66,26 +73,24 @@ second-year-poo/
 │       ├── context/
 │       │   └── AuthContext.tsx  # Vendor auth (localStorage + role check)
 │       ├── components/      # Sidebar, Header, StatCard, charts, tables
-│       ├── pages/           # Login, Dashboard, Analytics, Orders, Inventory
-│       ├── data/
-│       │   └── mockData.ts  # Only navItems (data now from backend)
+│       ├── pages/           # Login, Dashboard, Analytics, etc.
 │       └── types/
-│           └── index.ts
 └── backend/                 # Laravel 13 REST API
-    ├── Dockerfile
-    ├── .env                 # SQLite locally, MySQL in Docker
+    ├── .env                 # MySQL config, API keys, etc.
     ├── app/
     │   ├── Http/
     │   │   ├── Controllers/
     │   │   │   ├── Controller.php      # Base controller
-    │   │   │   ├── AuthController.php  # Auth endpoints (login, register, OTP, profile)
-    │   │   │   ├── AdminController.php # Admin CRUD (users, vendors, products, orders, stats)
-    │   │   │   ├── VendorController.php # Vendor CRUD (store, products, orders, sales)
+    │   │   │   ├── AuthController.php  # Auth endpoints (login, register, OTP, Google)
+    │   │   │   ├── AdminController.php # Admin CRUD
+    │   │   │   ├── VendorController.php # Vendor CRUD
     │   │   │   ├── ProductController.php # Public product browsing
     │   │   │   ├── OrderController.php  # Order placement and tracking
     │   │   │   └── ReviewController.php # Product reviews
+    │   │   └── Middleware/
+    │   │       └── RoleMiddleware.php   # role:admin, role:vendor
     │   └── Models/
-    │       ├── User.php       # role: customer|admin|vendor, status: active|inactive|banned
+    │       ├── User.php       # role: customer|admin|vendor
     │       ├── OtpCode.php    # Email/phone OTP codes
     │       ├── VendorStore.php # Vendor store profile
     │       ├── Category.php   # Product categories
@@ -97,12 +102,12 @@ second-year-poo/
     ├── routes/
     │   └── api.php            # All API routes with role middleware
     ├── database/
-    │   ├── migrations/        # 11 migrations (users, otp_codes, vendor_stores, categories, products, orders, order_items, reviews, payments, etc.)
-    │   └── seeders/
-    │       └── DatabaseSeeder.php
+    │   ├── migrations/        # Database schema migrations
+    │   └── seeders/           # Database seeders
     └── config/
         ├── auth.php           # Sanctum token driver
         ├── cors.php
+        ├── services.php       # Third-party service config (Google, SMS)
         └── ...
 ```
 
@@ -110,47 +115,76 @@ second-year-poo/
 
 ## 3. REQUEST FLOW
 
-### 3.1 Docker (Production-like)
+### 3.1 Local Development
+
 ```
-Browser → nginx (port 80)
-          ├── admin.* → admin:3001 (Vite preview)
-          ├── vendor.* → vendor:3002 (Vite preview)
-          ├── api.* → backend:8000 (Laravel)
-          └── _ → frontend:3000 (Next.js)
+Browser
+├── http://localhost:3000 → Frontend (Next.js)
+├── http://localhost:3003 → Shop (Next.js)
+├── http://localhost:3001 → Admin (Vite)
+├── http://localhost:3002 → Vendor (Vite)
+└── http://localhost:8000/api → Backend (Laravel)
 ```
 
-### 3.2 Local Development
-```bash
-# Backend
-cd backend && php artisan serve --port=8000
+### 3.2 API Call Chain
 
-# Frontend
-cd frontend && npm run dev -- --port 3000
+```
+Frontend/Shop/Admin/Vendor
+    ↓
+http://localhost:8000/api/{endpoint}
+    ↓
+Laravel Backend
+    ↓
+MySQL (localhost:3306)
+```
 
-# Admin
-cd admin && npm run dev -- --port 3001
+### 3.3 Authentication Flow
 
-# Vendor
-cd vendor && npm run dev -- --port 3002
+```
+1. User enters credentials in any frontend
+2. Frontend POSTs to /api/auth/login
+3. Backend validates credentials
+4. Backend returns user object + Sanctum token
+5. Frontend stores:
+   - user object in localStorage (app-specific key)
+   - token in localStorage (app-specific key)
+6. Subsequent requests include: Authorization: Bearer <token>
+7. Backend middleware validates token + role
 ```
 
 ---
 
 ## 4. AUTHENTICATION & AUTHORIZATION
 
-### 4.1 Flow
-1. Frontend/Admin/Vendor POST credentials to `/api/auth/login`
-2. Backend validates, returns `user` object + Sanctum `token`
-3. Client stores user in `localStorage` + token separately
-4. Subsequent requests include `Authorization: Bearer <token>` header
-5. Role checks enforced via `role:admin` or `role:vendor` middleware on backend
+### 4.1 Auth Context per App
+
+| App | Storage Key | Token Key | Role Check |
+|-----|-------------|-----------|------------|
+| frontend | `circuit-bazaar-auth` | `circuit-bazaar-token` | customer |
+| shop | `shop-auth` | `shop-token` | customer |
+| admin | `admin-auth` | `admin-token` | admin |
+| vendor | `vendor-auth` | `vendor-token` | vendor |
 
 ### 4.2 Role-Based Routing
-- **Admin login** → role must be `admin` → redirects to `admin.localhost`
-- **Vendor login** → role must be `vendor` → redirects to `vendor.localhost`
-- **Customer login** → role is `customer` → stays on marketplace
-- **Admin app** → shows login if not authenticated or role ≠ admin
-- **Vendor app** → shows login if not authenticated or role ≠ vendor
+
+- **Admin login** → role must be `admin` → stays on admin app
+- **Vendor login** → role must be `vendor` → stays on vendor app
+- **Customer login** → role is `customer` → stays on frontend/shop
+- **Google OAuth** → creates/finds user, redirects to shop app
+
+### 4.3 Registration Flow
+
+```
+Step 1: Name + Email/Phone choice + Password
+    ↓
+Step 2: OTP verification (email or phone)
+    ↓
+Step 3: Address (Nepal address picker) — required
+    ↓
+Step 4: Mandatory phone verification (if not already verified)
+    ↓
+Complete → Redirect to shop with token
+```
 
 ---
 
@@ -161,6 +195,8 @@ cd vendor && npm run dev -- --port 3002
 |--------|----------|-----------|-------------|
 | POST | `/api/auth/register` | AuthController | Register customer, sends OTP |
 | POST | `/api/auth/verify-email-otp` | AuthController | Verify email OTP |
+| POST | `/api/auth/send-phone-otp` | AuthController | Send phone OTP |
+| POST | `/api/auth/verify-phone-otp` | AuthController | Verify phone OTP |
 | POST | `/api/auth/resend-otp` | AuthController | Resend OTP |
 | POST | `/api/auth/login` | AuthController | Login, returns token + user |
 | POST | `/api/auth/forgot-password` | AuthController | Request password reset |
@@ -169,6 +205,8 @@ cd vendor && npm run dev -- --port 3002
 | GET | `/api/products` | ProductController | Browse active products |
 | GET | `/api/products/{id}` | ProductController | View single product |
 | GET | `/api/categories` | ProductController | List all categories |
+| GET | `/api/blog` | ContentController | Published blog posts |
+| GET | `/api/job-postings` | JobPostingController | Active job postings |
 
 ### 5.2 Protected (auth:sanctum)
 | Method | Endpoint | Controller | Description |
@@ -199,8 +237,10 @@ cd vendor && npm run dev -- --port 3002
 ### 5.4 Vendor (auth:sanctum + role:vendor)
 | Method | Endpoint | Controller | Description |
 |--------|----------|-----------|-------------|
-| POST | `/api/vendor/store` | VendorController | Register vendor store |
-| GET | `/api/vendor/store` | VendorController | Get my store |
+| POST | `/api/vendor/apply` | VendorApplicationController | Apply as vendor |
+| POST | `/api/vendor/verify-otp` | VendorApplicationController | Verify vendor application OTP |
+| POST | `/api/vendor/resend-otp` | VendorApplicationController | Resend vendor OTP |
+| GET | `/api/vendor/dashboard/stats` | VendorController | Dashboard stats |
 | GET | `/api/vendor/products` | VendorController | List my products |
 | POST | `/api/vendor/products` | VendorController | Create product |
 | PUT | `/api/vendor/products/{id}` | VendorController | Update product |
@@ -209,6 +249,12 @@ cd vendor && npm run dev -- --port 3002
 | PATCH | `/api/vendor/orders/{id}/status` | VendorController | Update order status |
 | GET | `/api/vendor/sales` | VendorController | Vendor sales report |
 | GET | `/api/vendor/reviews` | VendorController | Reviews for my products |
+
+### 5.5 Google OAuth
+| Method | Endpoint | Controller | Description |
+|--------|----------|-----------|-------------|
+| GET | `/api/auth/google/redirect` | AuthController | Redirect to Google OAuth |
+| GET | `/api/auth/google/callback` | AuthController | Google OAuth callback |
 
 ---
 
@@ -219,43 +265,77 @@ cd vendor && npm run dev -- --port 3002
 |--------|------|-------|
 | id | bigint PK | |
 | name | string | |
-| email | string UNIQUE | |
+| email | string nullable UNIQUE | Required for email channel |
 | email_verified_at | timestamp nullable | |
-| phone | string nullable UNIQUE | |
+| phone | string nullable UNIQUE | Required for phone channel |
 | phone_verified_at | timestamp nullable | |
 | password | string hashed | |
+| google_id | string nullable UNIQUE | Google OAuth ID |
 | role | enum(customer, admin, vendor) | default: customer |
 | status | enum(active, inactive, banned) | default: active |
-| remember_token | string nullable | |
 | address | string nullable | |
 | city | string nullable | |
+| province | string nullable | Nepal province |
+| district | string nullable | Nepal district |
+| municipality | string nullable | Nepal municipality |
+| ward | string nullable | Nepal ward |
 | postal_code | string nullable | |
 | country | string nullable | |
+| remember_token | string nullable | |
 | timestamps | | |
 
-### 6.2 vendor_stores
+### 6.2 otp_codes
+| Column | Type | Notes |
+|--------|------|-------|
+| id | bigint PK | |
+| user_id | FK → users.id nullable | |
+| email | string nullable | |
+| phone | string nullable | |
+| code | string(6) | 6-digit OTP |
+| type | enum(email_verification, phone_verification, password_reset, vendor_application) | |
+| verified_at | timestamp nullable | |
+| expires_at | timestamp | 5 minutes from creation |
+| timestamps | | |
+
+### 6.3 vendor_stores
 | Column | Type | Notes |
 |--------|------|-------|
 | id | bigint PK | |
 | user_id | FK → users.id | |
 | store_name | string | |
+| store_slug | string UNIQUE | |
 | description | text nullable | |
-| logo | string nullable | |
+| logo_url | string nullable | |
+| banner_url | string nullable | |
 | address | string nullable | |
 | phone | string nullable | |
 | verified | boolean | default: false |
 | status | enum(pending, active, suspended) | default: pending |
+| rating | decimal(3,2) nullable | |
+| total_products | integer | default: 0 |
+| total_orders | integer | default: 0 |
+| total_revenue | decimal(12,2) | default: 0 |
+| pan_number | string nullable | |
+| country | string nullable | |
+| province | string nullable | |
+| district | string nullable | |
+| municipality | string nullable | |
+| ward | string nullable | |
+| postal_code | string nullable | |
+| experience | string nullable | |
+| website | string nullable | |
 | timestamps | | |
 
-### 6.3 categories
+### 6.4 categories
 | Column | Type | Notes |
 |--------|------|-------|
 | id | bigint PK | |
 | name | string | |
 | slug | string UNIQUE | |
+| spec_schema | json nullable | Product specification schema |
 | timestamps | | |
 
-### 6.4 products
+### 6.5 products
 | Column | Type | Notes |
 |--------|------|-------|
 | id | bigint PK | |
@@ -271,7 +351,7 @@ cd vendor && npm run dev -- --port 3002
 | status | enum(active, inactive, draft) | default: active |
 | timestamps | | |
 
-### 6.5 orders
+### 6.6 orders
 | Column | Type | Notes |
 |--------|------|-------|
 | id | bigint PK | |
@@ -286,7 +366,7 @@ cd vendor && npm run dev -- --port 3002
 | shipping_phone | string nullable | |
 | timestamps | | |
 
-### 6.6 order_items
+### 6.7 order_items
 | Column | Type | Notes |
 |--------|------|-------|
 | id | bigint PK | |
@@ -300,7 +380,7 @@ cd vendor && npm run dev -- --port 3002
 | subtotal | decimal(12,2) | |
 | timestamps | | |
 
-### 6.7 reviews
+### 6.8 reviews
 | Column | Type | Notes |
 |--------|------|-------|
 | id | bigint PK | |
@@ -312,7 +392,7 @@ cd vendor && npm run dev -- --port 3002
 | timestamps | | |
 | unique | | user_id + product_id |
 
-### 6.8 payments
+### 6.9 payments
 | Column | Type | Notes |
 |--------|------|-------|
 | id | bigint PK | |
@@ -325,50 +405,148 @@ cd vendor && npm run dev -- --port 3002
 | payload | json nullable | gateway response |
 | timestamps | | |
 
+### 6.10 vendor_applications
+| Column | Type | Notes |
+|--------|------|-------|
+| id | bigint PK | |
+| full_name | string | |
+| email | string | |
+| phone | string nullable | |
+| store_name | string | |
+| description | text nullable | |
+| website | string nullable | |
+| pan_number | string | |
+| address | string nullable | |
+| country | string nullable | |
+| province | string nullable | |
+| district | string nullable | |
+| municipality | string nullable | |
+| ward | string nullable | |
+| postal_code | string nullable | |
+| experience | string nullable | |
+| otp_code | string(6) | |
+| otp_expires_at | timestamp | |
+| otp_verified_at | timestamp nullable | |
+| status | enum(pending, verified, rejected) | default: pending |
+| timestamps | | |
+
+### 6.11 blog_posts
+| Column | Type | Notes |
+|--------|------|-------|
+| id | bigint PK | |
+| title | string | |
+| slug | string UNIQUE | |
+| cover_image | string nullable | |
+| body | text | |
+| category | string nullable | |
+| author | string nullable | |
+| published_at | datetime nullable | |
+| is_published | boolean | default: false |
+| timestamps | | |
+
+### 6.12 job_postings
+| Column | Type | Notes |
+|--------|------|-------|
+| id | bigint PK | |
+| title | string | |
+| slug | string UNIQUE | |
+| department | string | |
+| location | string | |
+| employment_type | string | |
+| description | text | |
+| responsibilities | text nullable | |
+| requirements | json nullable | |
+| benefits | json nullable | |
+| application_deadline | datetime nullable | |
+| is_active | boolean | default: true |
+| timestamps | | |
+
+### 6.13 testimonials
+| Column | Type | Notes |
+|--------|------|-------|
+| id | bigint PK | |
+| name | string | |
+| slug | string UNIQUE | |
+| role | string nullable | |
+| company | string nullable | |
+| content | text | |
+| photo | string nullable | |
+| rating | tinyint | 1-5 |
+| is_published | boolean | default: false |
+| timestamps | | |
+
 ---
 
 ## 7. FRONTEND APPS
 
-### 7.1 Admin App (`admin.*`)
+### 7.1 Admin App (http://localhost:3001)
 - **Auth**: `src/context/AuthContext.tsx` — login/logout, stores token + user in localStorage
 - **Login Page**: `src/pages/Login.tsx` — email/password, role check (admin only)
 - **App Shell**: `src/App.tsx` — shows Login if not authenticated, otherwise sidebar + routed pages
-- **Pages**: Dashboard, Analytics, UsersPage, ProductsPage, OrdersPage
+- **Pages**: Dashboard, Analytics, UsersPage, ProductsPage, OrdersPage, Settings
 - **Data**: All pages fetch from `/api/admin/*` or `/api/*` using `apiFetch` helper with Bearer token
 
-### 7.2 Vendor App (`vendor.*`)
+### 7.2 Vendor App (http://localhost:3002)
 - **Auth**: `src/context/AuthContext.tsx` — login/logout, stores token + user in localStorage
-- **Login Page**: `src/pages/Login.tsx` — email/password, role check (vendor only)
+- **Login Page**: `src/pages/Login.tsx` — email/password, role check (vendor only), forgot/reset password
 - **App Shell**: `src/App.tsx` — shows Login if not authenticated, otherwise sidebar + routed pages
-- **Pages**: Dashboard, Analytics, Orders, Inventory
+- **Pages**: Dashboard, Store, Products, Orders, Sales, Analytics, Reviews
 - **Data**: All pages fetch from `/api/vendor/*` using `apiFetch` helper with Bearer token
 
-### 7.3 Marketplace Frontend (`baseurl`)
-- **Auth**: `src/context/AuthContext.tsx` — login/signup/logout
-- **Role-aware**: Header shows "Admin Dashboard" / "Vendor Dashboard" links based on user.role
-- **Login redirect**: `/auth/login` redirects to `admin.localhost` or `vendor.localhost` based on role
+### 7.3 Shop App (http://localhost:3003)
+- **Auth**: `src/context/AuthContext.tsx` — login/logout, stores token + user in localStorage
+- **Auth Callback**: `src/app/auth/callback/page.tsx` — handles Google OAuth redirect with token in URL
+- **Account Page**: `src/app/account/page.tsx` — user profile and orders
+- **Data**: Fetches from `/api/*` using `apiClient` with Bearer token
+
+### 7.4 Marketplace Frontend (http://localhost:3000)
+- **Auth**: `src/context/AuthContext.tsx` — signup/login/logout with email/phone/Google
+- **Register Flow**: Multi-step (name → channel → password → OTP → address → phone verification)
+- **Login Flow**: Email/phone + password, or Google OAuth
+- **Forgot/Reset Password**: Email OTP-based password reset
+- **Pages**: Home, Products, Blog, Career, Testimonials, Courier, Vendor, Shop, Login, Register
+- **Data**: Fetches from `/api/*` using `apiClient` with Bearer token
 
 ---
 
 ## 8. CRITICAL FILES & GOTCHAS
 
-### 8.1 docker-compose.yml
-- Admin and vendor services need `VITE_API_URL=http://api.localhost`
-- Backend context is `./backend`, Dockerfile COPY paths are relative
+### 8.1 Backend .env
+- MySQL credentials must match local MySQL installation
+- `DB_HOST=127.0.0.1` for local MySQL
+- `MAIL_USERNAME` and `MAIL_PASSWORD` for Gmail SMTP (OTP emails)
+- `KUSHASMS_TOKEN` for SMS OTP (Nepal numbers)
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` for Google OAuth
 
-### 8.2 Backend Models
-- **User** has `role` (customer/admin/vendor) and `status` (active/inactive/banned)
-- **VendorStore** links to User, has `verified` and `status` (pending/active/suspended)
-- **OrderItem** links to Order, Product, and VendorStore (for vendor-specific order filtering)
+### 8.2 Frontend .env
+- `NEXT_PUBLIC_API_URL=http://localhost:8000/api`
+- `NEXT_PUBLIC_SHOP_URL=http://localhost:3003`
 
-### 8.3 Role Middleware
-- `app/Http/Middleware/RoleMiddleware.php` — `role:admin`, `role:vendor`
-- Registered in `bootstrap/app.php` as middleware alias
+### 8.3 Admin .env
+- `VITE_API_URL=http://localhost:8000/api`
 
-### 8.4 Sanctum Token Auth
-- All admin/vendor/customer API routes use `auth:sanctum`
-- Tokens stored in `personal_access_tokens` table
-- Frontends send `Authorization: Bearer <token>` header
+### 8.4 Vendor .env
+- `VITE_API_URL=http://localhost:8000/api`
+
+### 8.5 Shop .env
+- `NEXT_PUBLIC_API_URL=http://localhost:8000/api`
+- `NEXT_PUBLIC_SHOP_URL=http://localhost:3003`
+
+### 8.6 OTP System
+- All OTPs expire in 5 minutes (constant: `OTP_EXPIRY_MINUTES = 5`)
+- Email OTP sent via Gmail SMTP
+- Phone OTP sent via KushaSMS API (default) or SMSKIT fallback
+- OTP types: `email_verification`, `phone_verification`, `password_reset`, `vendor_application`
+
+### 8.7 Phone Verification Gate
+- `phone_verified_at` is the hard gate for login
+- Users cannot log in if `phone_verified_at` is null
+- Google-authenticated users must also verify phone before full access
+
+### 8.8 Google OAuth
+- Backend handles OAuth flow via Socialite
+- Google callback redirects to shop app with token in URL query params
+- Shop app reads token from URL and stores in localStorage
 
 ---
 
@@ -376,17 +554,24 @@ cd vendor && npm run dev -- --port 3002
 
 ### frontend/.env
 ```
-NEXT_PUBLIC_API_URL=http://api.localhost
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_SHOP_URL=http://localhost:3003
 ```
 
-### admin/.env (via docker-compose)
+### shop/.env
 ```
-VITE_API_URL=http://api.localhost
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_SHOP_URL=http://localhost:3003
 ```
 
-### vendor/.env (via docker-compose)
+### admin/.env
 ```
-VITE_API_URL=http://api.localhost
+VITE_API_URL=http://localhost:8000/api
+```
+
+### vendor/.env
+```
+VITE_API_URL=http://localhost:8000/api
 ```
 
 ### backend/.env (key values)
@@ -395,12 +580,29 @@ APP_NAME=Laravel
 APP_ENV=local
 APP_KEY=base64:...
 APP_DEBUG=true
+APP_URL=http://localhost:8000
+
 DB_CONNECTION=mysql
-DB_HOST=mysql
+DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=circuit_bazaar
-DB_USERNAME=circuit
-DB_PASSWORD=circuit
+DB_USERNAME=root
+DB_PASSWORD=
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@circuitbazaar.com
+MAIL_FROM_NAME="Circuit Bazaar"
+
+KUSHASMS_TOKEN=your-kushasms-token
+
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=${APP_URL}/api/auth/google/callback
 ```
 
 ---
@@ -413,6 +615,12 @@ cd frontend; npx tsc --noEmit
 
 # Frontend build
 cd frontend; npm run build
+
+# Shop type check
+cd shop; npx tsc --noEmit
+
+# Shop build
+cd shop; npm run build
 
 # Admin type check
 cd admin; npx tsc --noEmit
@@ -433,32 +641,39 @@ cd backend; php artisan test
 cd backend; php artisan route:list
 
 # Backend migrate
-cd backend; php artisan migrate
+cd backend; php artisan migrate --force
 
-# Full Docker stack
-docker compose up --build
-
-# Verify services
-docker compose ps
+# Backend seed
+cd backend; php artisan db:seed --force
 ```
 
 ---
 
-## 11. SUBDOMAIN CONFIGURATION (hosts file)
+## 11. MYSQL SETUP
 
-For local testing with subdomains, add to `C:\Windows\System32\drivers\etc\hosts`:
-```
-127.0.0.1 baseurl.localhost
-127.0.0.1 admin.baseurl.localhost
-127.0.0.1 vendor.baseurl.localhost
-127.0.0.1 api.baseurl.localhost
+### Install MySQL on Windows
+
+1. Download MySQL Installer from https://dev.mysql.com/downloads/installer/
+2. Install "MySQL Server" and "MySQL Shell"
+3. During setup, set root password (or leave empty)
+4. Start MySQL service from Windows Services or MySQL Workbench
+
+### Create Database
+
+```sql
+CREATE DATABASE IF NOT EXISTS circuit_bazaar;
 ```
 
-Then access:
-- Public: http://baseurl.localhost
-- Admin: http://admin.baseurl.localhost
-- Vendor: http://vendor.baseurl.localhost
-- API: http://api.baseurl.localhost
+### Update backend/.env
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=circuit_bazaar
+DB_USERNAME=root
+DB_PASSWORD=your_password_here
+```
 
 ---
 
@@ -472,6 +687,34 @@ Then access:
 | Admin dashboard real data from backend | ✅ Implemented |
 | Vendor dashboard login + role check | ✅ Works |
 | Vendor dashboard real data from backend | ✅ Implemented |
-| Frontend role-aware navigation | ✅ Implemented |
-| Database migrations for all models | ✅ Implemented |
-| Docker-compose with all services | ✅ Works |
+| Vendor forgot/reset password | ✅ Works |
+| Frontend role-aware navigation | ✅ Works |
+| Frontend multi-step registration | ✅ Works |
+| Frontend forgot/reset password | ✅ Works |
+| Shop app with auth callback | ✅ Works |
+| Google OAuth integration | ✅ Works |
+| KushaSMS integration | ✅ Works |
+| Database migrations for all models | ✅ Works |
+| No Docker — local development only | ✅ Works |
+
+---
+
+## 13. QUICK REFERENCE
+
+### Default Credentials (seeded)
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@circuitbazaar.com | admin123 |
+| Vendor | vendor@circuitbazaar.com | vendor123 |
+
+### API Base URL
+```
+http://localhost:8000/api
+```
+
+### CORS
+Backend `config/cors.php` allows origins:
+- `http://localhost:3000`
+- `http://localhost:3001`
+- `http://localhost:3002`
+- `http://localhost:3003`

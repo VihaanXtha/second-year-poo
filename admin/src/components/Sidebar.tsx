@@ -21,6 +21,7 @@ import {
   Shield,
   Star,
   LayoutTemplate,
+  Database,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ElementType> = {
@@ -40,6 +41,7 @@ const iconMap: Record<string, React.ElementType> = {
   Shield,
   Star,
   LayoutTemplate,
+  Database,
   ChevronDown,
   ChevronLeft,
   Menu,
@@ -264,6 +266,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, colla
             </button>
           );
         })}
+
+        <a
+          href="http://localhost:8081"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200"
+          title="phpMyAdmin"
+        >
+          <Database className="w-[18px] h-[18px] flex-shrink-0" />
+          {!collapsed && <span>phpMyAdmin</span>}
+        </a>
       </nav>
 
       <div className="p-3 border-t border-slate-200">

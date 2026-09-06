@@ -7,8 +7,12 @@ use Illuminate\Support\Facades\Log;
 
 class SmsService
 {
-    public function sendOtp(string $to, string $code, string $via = 'smskit'): bool
+    public function sendOtp(string $to, string $code, string $via = 'kushasms'): bool
     {
+        if ($via === 'kushasms') {
+            return $this->sendViaKushaSms($to, $code);
+        }
+
         if ($via === 'smskit') {
             return $this->sendViaSmsKit($to, $code);
         }
@@ -20,6 +24,62 @@ class SmsService
         Log::warning("Unknown SMS gateway: {$via}");
 
         return false;
+    }
+
+    private function sendViaKushaSms(string $to, string $code): bool
+    {
+        $token = config('services.kushasms.token');
+
+        if (! $token) {
+            Log::warning('KushaSMS credentials not configured.');
+
+            return false;
+        }
+
+        $phone = preg_replace('/\D/', '', $to);
+        if (strlen($phone) === 12 && str_starts_with($phone, '977')) {
+            $phone = substr($phone, 3);
+        }
+
+        if (strlen($phone) !== 10 || ! str_starts_with($phone, '98')) {
+            Log::warning('Invalid Nepali phone number for KushaSMS: '.$to);
+
+            return false;
+        }
+
+        $message = "Your Circuit Bazaar OTP is: {$code}. It expires in 5 minutes.";
+
+        try {
+            $response = Http::withHeader('auth-token', $token)
+                ->acceptJson()
+                ->post('https://kushasms.com/sms/v4/send-user', [
+                    'to' => [$phone],
+                    'text' => [$message],
+                ]);
+
+            $data = $response->json();
+
+            if ($response->successful() && isset($data['responses'])) {
+                foreach ($data['responses'] as $responseItem) {
+                    if (! empty($responseItem['data']['valid'])) {
+                        return true;
+                    }
+                }
+            }
+
+            Log::error('KushaSMS API error', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return false;
+        } catch (\Throwable $e) {
+            Log::error('KushaSMS exception', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     private function sendViaSmsKit(string $to, string $code): bool
@@ -40,7 +100,7 @@ class SmsService
                 'api_key' => $apiKey,
                 'sender_id' => $senderId,
                 'to' => $phone,
-                'message' => "Your Circuit Bazaar OTP is: {$code}. It expires in 2 minutes.",
+                'message' => "Your Circuit Bazaar OTP is: {$code}. It expires in 5 minutes.",
             ]);
 
             if ($response->successful()) {
@@ -80,7 +140,7 @@ class SmsService
                 ->post("https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json", [
                     'From' => $from,
                     'To' => $to,
-                    'Body' => "Your Circuit Bazaar OTP is: {$code}. It expires in 10 minutes.",
+                    'Body' => "Your Circuit Bazaar OTP is: {$code}. It expires in 5 minutes.",
                 ]);
 
             if ($response->successful()) {
