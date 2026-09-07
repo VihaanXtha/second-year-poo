@@ -17,7 +17,7 @@ interface JobPosting {
   is_active: boolean;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backendcircuit-production.up.railway.app/api';
+const API_URL = 'http://localhost:8000/api';
 
 export function ApplyForm({ posting }: { posting: JobPosting }) {
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', notice_period: '1_month' });
@@ -51,17 +51,25 @@ export function ApplyForm({ posting }: { posting: JobPosting }) {
       return;
     }
 
-    const fd = new FormData();
-    fd.append('full_name', form.full_name);
-    fd.append('email', form.email);
-    fd.append('phone', form.phone);
-    fd.append('notice_period', form.notice_period);
-    fd.append('cv', cv);
+    const cvBase64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(cv);
+    });
 
     try {
       const res = await fetch(`${API_URL}/job-postings/${posting.id}/apply`, {
         method: 'POST',
-        body: fd,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: form.full_name,
+          email: form.email,
+          phone: form.phone,
+          notice_period: form.notice_period,
+          cv_base64: cvBase64,
+          cv_filename: cv.name,
+        }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -74,8 +82,9 @@ export function ApplyForm({ posting }: { posting: JobPosting }) {
       setSuccess(true);
       setForm({ full_name: '', email: '', phone: '', notice_period: '1_month' });
       setCv(null);
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Network error. Please try again.';
+      setError(message);
     } finally {
       setSubmitting(false);
     }

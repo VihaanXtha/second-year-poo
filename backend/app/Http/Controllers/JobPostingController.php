@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\JobApplication;
 use App\Models\JobPosting;
-use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class JobPostingController extends Controller
@@ -101,18 +101,27 @@ class JobPostingController extends Controller
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
             'notice_period' => ['nullable', Rule::in(['15_days', '1_month', '2_months', '3_months'])],
-            'cv' => ['required', 'file', 'mimetypes:application/pdf', 'max:5120'],
+            'cv_base64' => ['nullable', 'string'],
+            'cv_filename' => ['nullable', 'string', 'max:255'],
         ]);
 
         $cvUrl = null;
 
-        if ($request->hasFile('cv')) {
-            $cloudinary = new CloudinaryService;
-            $cvUrl = $cloudinary->uploadRaw($request->file('cv'), 'circuit-bazaar/cvs');
-
-            if (! $cvUrl) {
-                return response()->json(['message' => 'Failed to upload CV. Please try again.'], 422);
+        if (! empty($validated['cv_base64'])) {
+            $base64 = $validated['cv_base64'];
+            if (str_contains($base64, ',')) {
+                $base64 = explode(',', $base64, 2)[1];
             }
+            $binary = base64_decode($base64, true);
+            if ($binary === false) {
+                return response()->json(['message' => 'Invalid CV data.'], 422);
+            }
+
+            $filename = $validated['cv_filename'] ?? 'cv.pdf';
+            $path = 'cvs/'.uniqid().'_'.preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+
+            Storage::disk('public')->put($path, $binary);
+            $cvUrl = Storage::url($path);
         }
 
         $application = JobApplication::create([

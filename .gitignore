@@ -11,6 +11,8 @@ out/
 .env
 .env.backup
 .env.production
+.env.local
+.env.*.local
 
 # IDE
 .idea/
@@ -42,3 +44,15 @@ backend/storage/pail
 assets/
 nginx/
 scripts/
+
+# Docker (local dev only — Railway/Vercel use their own)
+docker-compose.yml
+docker-compose*.yml
+backend/docker/
+**/.dockerignore
+
+# Test artifacts
+test_output.txt
+backend/test_output.txt
+phpunit-result.xml
+.coverage

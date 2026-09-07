@@ -41,15 +41,6 @@ return [
         'from' => env('TWILIO_FROM'),
     ],
 
-    'smskit' => [
-        'api_key' => env('SMSKIT_API_KEY'),
-        'sender_id' => env('SMSKIT_SENDER_ID'),
-    ],
-
-    'kushasms' => [
-        'token' => env('KUSHASMS_TOKEN'),
-    ],
-
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
