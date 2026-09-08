@@ -1,6 +1,3 @@
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-
 const posts = [
   { slug: "rtx-50-series-first-impressions", title: "RTX 50 Series: First Impressions for Nepal Buyers", category: "Guides", date: "Sep 3, 2026", readTime: "7 min read", image: "https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=1200&q=80" },
   { slug: "building-a-low-power-nas-on-a-budget", title: "Building a Low-Power NAS on a Budget", category: "Builds", date: "Aug 25, 2026", readTime: "9 min read", image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80" },
@@ -15,7 +12,6 @@ export const metadata = {
 export default function BlogPage() {
   return (
     <main className="min-h-screen bg-white">
-      <Navbar />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
         <h1 className="text-4xl font-bold text-slate-900 mb-8">Blog</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -31,7 +27,6 @@ export default function BlogPage() {
           ))}
         </div>
       </div>
-      <Footer />
     </main>
   );
 }

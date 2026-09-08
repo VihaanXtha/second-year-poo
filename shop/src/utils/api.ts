@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
   CATEGORIES: '/categories',
   BRANDS: '/brands',
   PRODUCTS: '/products',
+  FAQS: '/faqs',
 } as const;
 
 export async function fetchData<T = unknown>(endpoint: string): Promise<T | null> {
@@ -71,4 +72,8 @@ function generateSlug(str: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+export async function getFaqs() {
+  return fetchData<{ faqs: any[] }>(API_ENDPOINTS.FAQS);
 }

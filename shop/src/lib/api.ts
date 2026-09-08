@@ -51,6 +51,18 @@ export async function apiClient<T = unknown>(path: string, init?: RequestInit): 
   return response.json() as T;
 }
 
+export async function getCategories() {
+  return apiClient<{ categories: any[] }>('/categories');
+}
+
+export async function getBrands() {
+  return apiClient<{ brands: any[] }>('/brands');
+}
+
+export async function getFaqs() {
+  return apiClient<{ faqs: any[] }>('/faqs');
+}
+
 export interface ApiResponse<T = unknown> {
   data: T;
   message?: string;

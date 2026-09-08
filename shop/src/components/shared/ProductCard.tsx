@@ -3,12 +3,18 @@ import { Product } from "@/types";
 
 export function ProductCard({ product }: { product: Product }) {
   return (
-    <Link href={`/products/${product.slug}`} className="group rounded-xl border border-slate-200 overflow-hidden hover:shadow-sm transition-shadow block">
-      <img src={product.image} alt={product.name} className="w-full h-48 object-cover bg-slate-100" />
-      <div className="p-4">
-        <p className="text-xs text-slate-500 mb-1">{product.category}</p>
-        <h3 className="text-sm font-medium text-slate-900 line-clamp-2 group-hover:text-red-700">{product.name}</h3>
-        <p className="mt-2 text-sm font-semibold text-slate-900">Rs. {product.priceNpr.toLocaleString()}</p>
+    <Link href={`/products/${product.slug}`} className="group block rounded-2xl bg-white ring-1 ring-slate-200 overflow-hidden hover:shadow-xl hover:shadow-slate-200/60 hover:ring-slate-300 transition-all duration-300">
+      <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
+        <img src={product.image} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      </div>
+      <div className="p-5">
+        <span className="text-[11px] font-bold tracking-wider text-red-700 bg-red-50 px-2.5 py-1 rounded-md uppercase">{product.category}</span>
+        <h3 className="mt-3 text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-red-700 transition-colors">{product.name}</h3>
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="text-base font-bold text-slate-900">Rs. {product.priceNpr.toLocaleString()}</span>
+          <span className="text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-md">{product.stockStatus || "In Stock"}</span>
+        </div>
       </div>
     </Link>
   );

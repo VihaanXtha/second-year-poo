@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\FaqController;
+use App\Http\Controllers\Admin\SliderController;
+use App\Http\Controllers\Admin\SuperSubCategoryController;
+use App\Http\Controllers\Admin\SubCategoryController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContentController;
@@ -45,6 +51,10 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/categories', [ProductController::class, 'categories']);
 Route::get('/categories/{category}/spec-schema', [ProductController::class, 'specSchema']);
+Route::get('/categories/{category}/sub-categories', [App\Http\Controllers\Admin\SubCategoryController::class, 'index']);
+Route::get('/sub-categories/{subCategory}/super-sub-categories', [App\Http\Controllers\Admin\SuperSubCategoryController::class, 'index']);
+Route::get('/brands', [App\Http\Controllers\Admin\BrandController::class, 'index']);
+Route::get('/faqs', [App\Http\Controllers\Admin\FaqController::class, 'index']);
 
 // Payment callbacks/webhooks (public - called by gateways)
 Route::post('/payments/callback/esewa', [PaymentController::class, 'callbackEsewa'])->name('payments.callback.esewa');
@@ -154,6 +164,11 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::get('/sales', [AdminController::class, 'salesReport']);
     Route::get('/categories', [AdminController::class, 'categories']);
     Route::put('/categories/{category}/spec-schema', [AdminController::class, 'updateCategorySpecSchema']);
+    Route::apiResource('categories', CategoryController::class);
+    Route::apiResource('sub-categories', SubCategoryController::class);
+    Route::apiResource('super-sub-categories', SuperSubCategoryController::class);
+    Route::apiResource('brands', BrandController::class);
+    Route::apiResource('faqs', FaqController::class);
 });
 
 // Vendor routes

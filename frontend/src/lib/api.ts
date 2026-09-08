@@ -95,9 +95,77 @@ export interface CourierInfo {
 
 export interface HomepageSlider {
   id: number;
+  title: string;
+  subtitle?: string;
   image_url: string;
   headline: string;
   link_url?: string;
   sort_order: number;
   is_active: boolean;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  display_order?: number;
+  is_active: boolean;
+}
+
+export interface SubCategory {
+  id: number;
+  category_id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  display_order?: number;
+  is_active: boolean;
+}
+
+export interface SuperSubCategory {
+  id: number;
+  sub_category_id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  display_order?: number;
+  is_active: boolean;
+}
+
+export interface Brand {
+  id: number;
+  name: string;
+  slug: string;
+  logo?: string;
+  description?: string;
+  website?: string;
+  is_active: boolean;
+}
+
+export interface Faq {
+  id: number;
+  question: string;
+  answer: string;
+  display_order?: number;
+  is_active: boolean;
+}
+
+export async function getCategories() {
+  return apiClient<{ categories: Category[] }>('/categories');
+}
+
+export async function getBrands() {
+  return apiClient<{ brands: Brand[] }>('/brands');
+}
+
+export async function getSliders() {
+  return apiClient<{ sliders: HomepageSlider[] }>('/sliders');
+}
+
+export async function getFaqs() {
+  return apiClient<{ faqs: Faq[] }>('/faqs');
 }

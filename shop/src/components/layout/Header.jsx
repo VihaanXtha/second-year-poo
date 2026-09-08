@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Search, ShoppingBag, User, ChevronDown, Facebook, Instagram, Heart, Globe } from "lucide-react";
+import { Search, ShoppingBag, User, ChevronDown, Heart, Globe } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
@@ -56,12 +56,6 @@ export default function Header() {
       <div className="border-b border-gray-100 py-2 px-4 sm:px-8">
         <div className="max-w-[1300px] mx-auto flex justify-between items-center text-[12px] text-gray-600">
           <div className="flex items-center space-x-4">
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-inherit">
-              <Facebook className="w-4 h-4 cursor-pointer hover:text-orange-500 transition-colors" />
-            </a>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-inherit">
-              <Instagram className="w-4 h-4 cursor-pointer hover:text-orange-500 transition-colors" />
-            </a>
             <a href="https://google.com" target="_blank" rel="noopener noreferrer" className="text-inherit">
               <Globe className="w-4 h-4 cursor-pointer hover:text-orange-500 transition-colors" />
             </a>

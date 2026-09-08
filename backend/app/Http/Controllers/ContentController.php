@@ -238,14 +238,14 @@ class ContentController extends Controller
 
     public function slidersIndex()
     {
-        $sliders = HomepageSlider::orderBy('sort_order')->get(['id', 'image_url', 'headline', 'link_url', 'sort_order', 'is_active']);
+        $sliders = HomepageSlider::orderBy('sort_order')->get(['id', 'title', 'subtitle', 'image_url', 'headline', 'link_url', 'sort_order', 'is_active']);
 
         return response()->json(['sliders' => $sliders]);
     }
 
     public function activeSliders()
     {
-        $sliders = HomepageSlider::where('is_active', true)->orderBy('sort_order')->get(['id', 'image_url', 'headline', 'link_url', 'sort_order', 'is_active']);
+        $sliders = HomepageSlider::where('is_active', true)->orderBy('sort_order')->get(['id', 'title', 'subtitle', 'image_url', 'headline', 'link_url', 'sort_order', 'is_active']);
 
         return response()->json(['sliders' => $sliders]);
     }

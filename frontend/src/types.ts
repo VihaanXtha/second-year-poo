@@ -25,6 +25,8 @@ export interface Product {
   warranty: string;
   description: string;
   inBox: string[];
+  slug: string;
+  isBestSeller?: boolean;
 }
 
 export interface Vendor {

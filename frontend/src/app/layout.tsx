@@ -16,23 +16,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Circuit Bazaar | Nepal's Verified IT Hardware Marketplace",
+  title: "Lumen Studio — Design Tooling for Teams",
   description:
-    "Nepal's specification-first hardware marketplace. Source genuine PC components, networking gear, IoT modules, and laptops from verified local vendors with official warranties.",
+    "Design tooling for teams who ship on Fridays. Built for the browser, offline by default.",
   keywords: [
-    "Circuit Bazaar",
-    "Nepal hardware",
-    "IT components Nepal",
-    "verified PC vendors",
-    "Kathmandu tech",
-    "GPU Nepal",
-    "networking gear Nepal",
+    "Lumen Studio",
+    "design tooling",
+    "browser design",
+    "offline design",
   ],
-  authors: [{ name: "Circuit Bazaar" }],
+  authors: [{ name: "Lumen Studio" }],
   openGraph: {
-    title: "Circuit Bazaar | Nepal's Verified IT Hardware Marketplace",
+    title: "Lumen Studio — Design Tooling for Teams",
     description:
-      "Discover genuine PC components, server hardware, networking gear, and custom rigs backed by verified Nepal vendor warranties.",
+      "Design tooling for teams who ship on Fridays. Built for the browser, offline by default.",
     type: "website",
     locale: "en_US",
   },

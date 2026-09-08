@@ -18,9 +18,11 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AdminUserSeeder::class,
             VendorUserSeeder::class,
+            ProductSeeder::class,
             BlogPostSeeder::class,
             JobPostingSeeder::class,
             TestimonialSeeder::class,
+            CatalogSeeder::class,
         ]);
 
         $categories = [

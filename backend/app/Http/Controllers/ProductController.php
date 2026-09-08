@@ -75,7 +75,9 @@ class ProductController extends Controller
 
     public function categories()
     {
-        $categories = Category::orderBy('name')->get(['id', 'name', 'slug', 'spec_schema']);
+        $categories = Category::with(['subCategories' => function ($q) {
+            $q->with(['superSubCategories']);
+        }])->orderBy('display_order')->orderByDesc('id')->get(['id', 'name', 'slug', 'description', 'image', 'display_order', 'is_active']);
 
         return response()->json(['categories' => $categories]);
     }

@@ -1,6 +1,3 @@
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-
 export const metadata = {
   title: "About Circuit Bazaar",
   description: "Nepal's specification-first hardware marketplace.",
@@ -9,7 +6,6 @@ export const metadata = {
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-white">
-      <Navbar />
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
         <h1 className="text-4xl font-bold text-slate-900 mb-6">About Circuit Bazaar</h1>
         <p className="text-lg text-slate-700 leading-relaxed mb-6">
@@ -26,7 +22,6 @@ export default function AboutPage() {
           <li>Official warranties and easy returns</li>
         </ul>
       </div>
-      <Footer />
     </main>
   );
 }

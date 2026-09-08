@@ -212,9 +212,12 @@ input[type=range]::-webkit-slider-thumb:hover {
   background-size: 200% 100%;
   animation: shimmer 2s ease-in-out infinite;
 }
-.animate-marquee {
-  animation: marquee 24s linear infinite;
-}
+  .animate-marquee {
+    animation: marquee 24s linear infinite;
+  }
+  .animate-marquee-slow {
+    animation: marquee 35s linear infinite;
+  }
 .animate-gradient {
   background-size: 200% 200%;
   animation: gradientShift 8s ease infinite;
