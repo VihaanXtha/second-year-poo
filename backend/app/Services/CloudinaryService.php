@@ -3,26 +3,35 @@
 namespace App\Services;
 
 use Cloudinary\Cloudinary;
+use Cloudinary\Exception\ConfigurationException;
 use Cloudinary\Exception\MediaApiException;
 use Illuminate\Http\UploadedFile;
 
 class CloudinaryService
 {
-    private Cloudinary $client;
+    private ?Cloudinary $client = null;
 
     public function __construct()
     {
-        $this->client = new Cloudinary([
-            'cloud' => [
-                'cloud_name' => config('cloudinary.cloud_name'),
-                'api_key' => config('cloudinary.api_key'),
-                'api_secret' => config('cloudinary.api_secret'),
-            ],
-        ]);
+        try {
+            $this->client = new Cloudinary([
+                'cloud' => [
+                    'cloud_name' => config('cloudinary.cloud_name'),
+                    'api_key' => config('cloudinary.api_key'),
+                    'api_secret' => config('cloudinary.api_secret'),
+                ],
+            ]);
+        } catch (ConfigurationException $e) {
+            \Log::warning('Cloudinary configuration error: '.$e->getMessage());
+        }
     }
 
     public function upload(UploadedFile $file, ?string $folder = 'circuit-bazaar/products'): ?string
     {
+        if (! $this->client) {
+            return null;
+        }
+
         try {
             $result = $this->client->uploadApi()->upload($file->getRealPath(), [
                 'folder' => $folder,
@@ -40,6 +49,10 @@ class CloudinaryService
 
     public function uploadRaw(UploadedFile $file, ?string $folder = 'circuit-bazaar/cvs'): ?string
     {
+        if (! $this->client) {
+            return null;
+        }
+
         try {
             $result = $this->client->uploadApi()->upload($file->getRealPath(), [
                 'folder' => $folder,

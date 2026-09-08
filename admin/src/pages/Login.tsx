@@ -116,7 +116,7 @@ export const Login: React.FC = () => {
                 <input type="checkbox" className="rounded border-slate-300 text-primary focus:ring-primary" />
                 <span className="text-sm text-slate-600">Remember me</span>
               </label>
-              <a href="#" className="text-sm text-primary hover:text-primary-dark font-medium">Forgot password?</a>
+              <button type="button" onClick={() => alert('Password reset flow coming soon.')} className="text-sm text-primary hover:text-primary-dark font-medium">Forgot password?</button>
             </div>
 
             <button

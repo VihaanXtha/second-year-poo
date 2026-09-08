@@ -4,13 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Mail\OtpMail;
 use App\Models\OtpCode;
-use App\Models\User;
 use App\Models\VendorApplication;
-use App\Models\VendorStore;
 use App\Services\SmsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -80,7 +77,9 @@ class VendorApplicationController extends Controller
 
         $application->update(['otp_verified_at' => Carbon::now(), 'status' => 'verified']);
 
-        return $this->createVendorAccount($application);
+        return response()->json([
+            'message' => 'Email verified successfully. Your application will be reviewed by an admin. Your account will be created upon approval.',
+        ]);
     }
 
     public function resendOtp(Request $request)
@@ -112,43 +111,5 @@ class VendorApplicationController extends Controller
         Mail::to($application->email)->send(new OtpMail($code, 'vendor_application'));
 
         return response()->json(['message' => 'OTP resent to your email.']);
-    }
-
-    private function createVendorAccount(VendorApplication $application)
-    {
-        $tempPassword = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-        $user = User::create([
-            'name' => $application->full_name,
-            'email' => $application->email,
-            'password' => Hash::make($tempPassword),
-            'role' => 'vendor',
-            'status' => 'active',
-            'phone' => $application->phone,
-            'address' => $application->address,
-            'city' => $application->municipality,
-            'province' => $application->province,
-            'district' => $application->district,
-            'municipality' => $application->municipality,
-            'ward' => $application->ward,
-            'postal_code' => $application->postal_code,
-            'country' => $application->country,
-        ]);
-
-        VendorStore::create([
-            'user_id' => $user->id,
-            'store_name' => $application->store_name,
-            'description' => $application->description,
-            'address' => $application->address,
-            'phone' => $application->phone,
-            'status' => 'pending',
-            'verified' => false,
-        ]);
-
-        Mail::to($user->email)->send(new \App\Mail\VendorCredentialsMail($user->email, $tempPassword));
-
-        return response()->json([
-            'message' => 'Email verified successfully. Your vendor account is pending admin approval. Credentials have been sent to your email.',
-        ]);
     }
 }

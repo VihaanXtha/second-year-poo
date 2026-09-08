@@ -34,6 +34,11 @@
                 </div>
             </div>
             <p class="note">Please change your password after logging in. If you did not request this, please contact support.</p>
+            @if($portalUrl)
+            <p class="note" style="margin-top: 16px;">
+                <a href="{{ $portalUrl }}" style="display: inline-block; background: #dc2626; color: #ffffff; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Go to Vendor Portal</a>
+            </p>
+            @endif
         </div>
         <div class="footer">
             &copy; {{ date('Y') }} Circuit Bazaar. All rights reserved.

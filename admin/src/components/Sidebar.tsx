@@ -21,7 +21,8 @@ import {
   Shield,
   Star,
   LayoutTemplate,
-  Database,
+  Tag,
+  HelpCircle,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ElementType> = {
@@ -41,7 +42,8 @@ const iconMap: Record<string, React.ElementType> = {
   Shield,
   Star,
   LayoutTemplate,
-  Database,
+  Tag,
+  HelpCircle,
   ChevronDown,
   ChevronLeft,
   Menu,
@@ -70,6 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, colla
     { id: 'blog', label: 'Blog Posts', icon: BlogIcon },
     { id: 'careers', label: 'Job Postings', icon: Briefcase },
     { id: 'testimonials', label: 'Testimonials', icon: Star },
+    { id: 'faq', label: 'FAQ', icon: HelpCircle },
   ];
 
   const isUsersActive = userTabs.some(tab => tab.id === activeNav);
@@ -181,6 +184,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, colla
         {[
           { id: 'products', label: 'Products', icon: Package },
           { id: 'categories', label: 'Categories', icon: FolderTree },
+          { id: 'subcategories', label: 'Sub Categories', icon: FolderTree },
+          { id: 'supersubcategories', label: 'Super Sub Categories', icon: FolderTree },
+          { id: 'brands', label: 'Brands', icon: Tag },
           { id: 'orders', label: 'Orders', icon: ShoppingCart },
         ].map((item) => {
           const Icon = item.icon;
@@ -265,31 +271,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, colla
               {!collapsed && <span>{item.label}</span>}
             </button>
           );
-        })}
+        }        )}
 
-        <a
-          href="http://localhost:8081"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200"
-          title="phpMyAdmin"
-        >
-          <Database className="w-[18px] h-[18px] flex-shrink-0" />
-          {!collapsed && <span>phpMyAdmin</span>}
-        </a>
+        <div className="p-3 border-t border-slate-200">
+          <button
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-primary transition-all duration-200 cursor-pointer ${
+              collapsed ? 'justify-center' : ''
+            }`}
+            title="Logout"
+          >
+            <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
+            {!collapsed && <span>Logout</span>}
+          </button>
+        </div>
       </nav>
-
-      <div className="p-3 border-t border-slate-200">
-        <button
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-primary transition-all duration-200 cursor-pointer ${
-            collapsed ? 'justify-center' : ''
-          }`}
-          title="Logout"
-        >
-          <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
-          {!collapsed && <span>Logout</span>}
-        </button>
-      </div>
     </aside>
   );
 };

@@ -7,20 +7,25 @@ use Illuminate\Http\Request;
 
 class Cors
 {
-    protected array $allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:3002',
-        'http://localhost:3003',
-        'http://frontend.localhost',
-        'http://admin.localhost',
-        'http://vendor.localhost',
-        'http://shop.localhost',
-        'https://frontendcircuit-production.up.railway.app',
-        'https://admincircuit-production.up.railway.app',
-        'https://vendorcircuit-production.up.railway.app',
-        'https://shopcircuit-production.up.railway.app',
-    ];
+    protected array $allowedOrigins;
+
+    public function __construct()
+    {
+        $envOrigins = array_filter(array_map('trim', explode(',', (string) env('CORS_ALLOWED_ORIGINS', ''))));
+        $this->allowedOrigins = array_merge(
+            [
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'http://localhost:3002',
+                'http://localhost:3003',
+                'http://frontend.localhost',
+                'http://admin.localhost',
+                'http://vendor.localhost',
+                'http://shop.localhost',
+            ],
+            $envOrigins
+        );
+    }
 
     public function handle(Request $request, Closure $next)
     {

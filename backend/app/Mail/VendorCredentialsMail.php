@@ -14,11 +14,13 @@ class VendorCredentialsMail extends Mailable
 
     public $email;
     public $password;
+    public $portalUrl;
 
-    public function __construct(string $email, string $password)
+    public function __construct(string $email, string $password, ?string $portalUrl = null)
     {
         $this->email = $email;
         $this->password = $password;
+        $this->portalUrl = $portalUrl;
     }
 
     public function envelope(): Envelope
@@ -35,6 +37,7 @@ class VendorCredentialsMail extends Mailable
             with: [
                 'email' => $this->email,
                 'password' => $this->password,
+                'portalUrl' => $this->portalUrl,
             ],
         );
     }

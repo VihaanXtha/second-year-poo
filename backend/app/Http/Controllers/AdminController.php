@@ -3,14 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Events\OrderStatusUpdated;
+use App\Mail\VendorCredentialsMail;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\VendorApplication;
 use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class AdminController extends Controller
 {
@@ -175,19 +178,43 @@ class AdminController extends Controller
 
     public function vendorApplications(Request $request)
     {
-        $query = VendorStore::where('status', 'pending')
-            ->orWhere('verified', false)
-            ->with('user');
+        $query = VendorApplication::query();
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->whereHas('user', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            })->orWhere('store_name', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('store_name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
         }
 
         $applications = $query->latest()->paginate(15);
+
+        $applications->getCollection()->transform(function ($app) {
+            return [
+                'id' => $app->id,
+                'user_id' => $app->id,
+                'store_name' => $app->store_name,
+                'description' => $app->description,
+                'address' => $app->address,
+                'phone' => $app->phone,
+                'status' => $app->status,
+                'verified' => $app->status === 'approved',
+                'created_at' => $app->created_at,
+                'user' => [
+                    'id' => $app->id,
+                    'name' => $app->full_name,
+                    'email' => $app->email,
+                    'role' => 'vendor',
+                    'email_verified_at' => $app->otp_verified_at,
+                ],
+            ];
+        });
 
         return response()->json($applications);
     }
@@ -210,18 +237,65 @@ class AdminController extends Controller
         return response()->json($applications);
     }
 
-    public function approveVendor(VendorStore $vendorStore)
+    public function approveVendor(VendorApplication $vendorApplication)
     {
-        $vendorStore->update(['verified' => true, 'status' => 'active']);
+        DB::beginTransaction();
 
-        return response()->json(['message' => 'Vendor approved.', 'vendor' => $vendorStore]);
+        try {
+            $tempPassword = bin2hex(random_bytes(16));
+
+            $user = User::create([
+                'name' => $vendorApplication->full_name,
+                'email' => $vendorApplication->email,
+                'password' => Hash::make($tempPassword),
+                'role' => 'vendor',
+                'status' => 'active',
+                'phone' => $vendorApplication->phone,
+                'address' => $vendorApplication->address,
+                'city' => $vendorApplication->municipality,
+                'province' => $vendorApplication->province,
+                'district' => $vendorApplication->district,
+                'municipality' => $vendorApplication->municipality,
+                'ward' => $vendorApplication->ward,
+                'postal_code' => $vendorApplication->postal_code,
+                'country' => $vendorApplication->country,
+                'must_change_password' => true,
+            ]);
+
+            VendorStore::create([
+                'user_id' => $user->id,
+                'store_name' => $vendorApplication->store_name,
+                'description' => $vendorApplication->description,
+                'address' => $vendorApplication->address,
+                'phone' => $vendorApplication->phone,
+                'status' => 'active',
+                'verified' => true,
+            ]);
+
+            $portalUrl = env('VENDOR_PORTAL_URL');
+
+            Mail::to($user->email)->send(new VendorCredentialsMail($user->email, $tempPassword, $portalUrl));
+
+            $vendorApplication->update(['status' => 'approved']);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Vendor approved and account created. Credentials email sent.',
+                'vendor' => $vendorApplication,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json(['message' => 'Failed to approve vendor: '.$e->getMessage()], 500);
+        }
     }
 
-    public function rejectVendor(VendorStore $vendorStore)
+    public function rejectVendor(VendorApplication $vendorApplication)
     {
-        $vendorStore->update(['status' => 'rejected']);
+        $vendorApplication->update(['status' => 'rejected']);
 
-        return response()->json(['message' => 'Vendor rejected.', 'vendor' => $vendorStore]);
+        return response()->json(['message' => 'Vendor application rejected.', 'vendor' => $vendorApplication]);
     }
 
     public function products(Request $request)

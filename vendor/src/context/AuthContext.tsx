@@ -7,6 +7,7 @@ export interface VendorUser {
   role: string;
   status: string;
   email_verified: boolean;
+  must_change_password?: boolean;
   phone?: string;
 }
 
@@ -40,17 +41,20 @@ interface AuthContextType {
   user: VendorUser | null;
   store: VendorStore | null;
   isAuthenticated: boolean;
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<{ mustChangePassword: boolean } | void>;
   logout: () => void;
   loading: boolean;
   refreshStore: (Store: VendorStore) => void;
+  clearMustChangePassword: () => void;
   token: string | null;
+  mustChangePassword: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function getApiUrl(): string {
-  return 'http://localhost:8000/api';
+  const viteApiUrl = (import.meta.env.VITE_API_URL || '').trim();
+  return viteApiUrl ? viteApiUrl.replace(/\/+$/, '') : 'http://localhost:8000/api';
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -58,13 +62,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<VendorStore | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('vendor-auth');
       const storedStore = localStorage.getItem('vendor-store');
       const storedToken = localStorage.getItem('vendor-token');
-      if (storedUser) setUser(JSON.parse(storedUser));
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        if (parsedUser.must_change_password) {
+          setMustChangePassword(true);
+        }
+      }
       if (storedStore) setStore(JSON.parse(storedStore));
       if (storedToken) setToken(storedToken);
     } catch {
@@ -100,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: data.user.role,
       status: data.user.status || 'active',
       email_verified: !!data.user.email_verified,
+      must_change_password: !!data.must_change_password,
       phone: data.user.phone,
     };
 
@@ -137,6 +149,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('vendor-auth', JSON.stringify(userData));
     if (storeData) localStorage.setItem('vendor-store', JSON.stringify(storeData));
     localStorage.setItem('vendor-token', data.token);
+
+    if (data.must_change_password) {
+      setMustChangePassword(true);
+      return { mustChangePassword: true };
+    }
+
+    setMustChangePassword(false);
+    return;
   }, []);
 
   const logout = useCallback(() => {
@@ -153,9 +173,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('vendor-store', JSON.stringify(next));
   }, []);
 
+  const clearMustChangePassword = useCallback(() => {
+    setMustChangePassword(false);
+    if (user) {
+      const updated = { ...user, must_change_password: false };
+      setUser(updated);
+      localStorage.setItem('vendor-auth', JSON.stringify(updated));
+    }
+  }, [user]);
+
   return (
     <AuthContext.Provider
-      value={{ user, store, isAuthenticated: !!user, login, logout, loading, refreshStore, token }}
+      value={{ user, store, isAuthenticated: !!user, login, logout, loading, refreshStore, clearMustChangePassword, token, mustChangePassword }}
     >
       {children}
     </AuthContext.Provider>

@@ -104,5 +104,6 @@ export function getAdminToken(): string | null {
 }
 
 export function getApiUrl(): string {
-  return 'http://localhost:8000/api';
+  const viteApiUrl = (import.meta.env.VITE_API_URL || '').trim();
+  return viteApiUrl ? viteApiUrl.replace(/\/+$/, '') : 'http://localhost:8000/api';
 }

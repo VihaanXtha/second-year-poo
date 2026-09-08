@@ -108,9 +108,9 @@ export const VendorsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
     load();
   }, [apiFetch, searchQuery]);
 
-  const handleApprove = async (vendorStoreId: number) => {
+  const handleApprove = async (applicationId: number) => {
     try {
-      await apiFetch(`/admin/vendor-applications/${vendorStoreId}/approve`, { method: 'POST' });
+      await apiFetch(`/admin/vendor-applications/${applicationId}/approve`, { method: 'POST' });
       await loadApplications();
       await loadVendors();
     } catch (e) {
@@ -119,10 +119,10 @@ export const VendorsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
     }
   };
 
-  const handleReject = async (vendorStoreId: number) => {
+  const handleReject = async (applicationId: number) => {
     if (!confirm('Reject this vendor application?')) return;
     try {
-      await apiFetch(`/admin/vendor-applications/${vendorStoreId}/reject`, { method: 'POST' });
+      await apiFetch(`/admin/vendor-applications/${applicationId}/reject`, { method: 'POST' });
       await loadApplications();
     } catch (e) {
       console.error(e);

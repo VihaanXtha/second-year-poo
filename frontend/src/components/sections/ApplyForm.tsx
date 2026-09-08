@@ -17,12 +17,13 @@ interface JobPosting {
   is_active: boolean;
 }
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export function ApplyForm({ posting }: { posting: JobPosting }) {
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', notice_period: '1_month' });
   const [cv, setCv] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -31,6 +32,7 @@ export function ApplyForm({ posting }: { posting: JobPosting }) {
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setProgress(0);
     setError(null);
 
     if (!cv) {
@@ -51,31 +53,31 @@ export function ApplyForm({ posting }: { posting: JobPosting }) {
       return;
     }
 
-    const cvBase64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(cv);
-    });
+    const formData = new FormData();
+    formData.append('full_name', form.full_name);
+    formData.append('email', form.email);
+    formData.append('phone', form.phone);
+    formData.append('notice_period', form.notice_period);
+    formData.append('cv', cv);
 
     try {
-      const res = await fetch(`${API_URL}/job-postings/${posting.id}/apply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          full_name: form.full_name,
-          email: form.email,
-          phone: form.phone,
-          notice_period: form.notice_period,
-          cv_base64: cvBase64,
-          cv_filename: cv.name,
-        }),
+      const data = await new Promise<{ ok: boolean; status: number; json: () => Promise<any> }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_URL}/job-postings/${posting.id}/apply`);
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            setProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        };
+        xhr.onload = () => resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, json: () => JSON.parse(xhr.responseText || '{}') });
+        xhr.onerror = () => reject(new Error('Network error. Please try again.'));
+        xhr.send(formData);
       });
 
-      const data = await res.json().catch(() => ({}));
+      const json = await data.json();
 
-      if (!res.ok) {
-        setError(data.message || 'Failed to submit application.');
+      if (!data.ok) {
+        setError(json.message || 'Failed to submit application.');
         return;
       }
 
@@ -87,6 +89,7 @@ export function ApplyForm({ posting }: { posting: JobPosting }) {
       setError(message);
     } finally {
       setSubmitting(false);
+      setProgress(0);
     }
   }, [form, cv, posting.id]);
 
@@ -147,7 +150,7 @@ export function ApplyForm({ posting }: { posting: JobPosting }) {
         {cv && <p className="text-xs text-slate-500 mt-1">{cv.name} ({(cv.size / 1024 / 1024).toFixed(1)} MB)</p>}
       </div>
       <button type="submit" disabled={submitting} className="inline-flex items-center justify-center rounded-xl bg-red-700 px-6 py-3 text-sm font-semibold text-white hover:bg-red-800 transition-colors disabled:opacity-50">
-        {submitting ? 'Submitting...' : 'Submit Application'}
+        {submitting ? (progress > 0 ? `Uploading ${progress}%` : 'Submitting...') : 'Submit application'}
       </button>
     </form>
   );

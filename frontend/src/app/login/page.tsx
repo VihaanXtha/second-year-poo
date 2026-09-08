@@ -17,7 +17,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      const shopUrl = process.env.NEXT_PUBLIC_SHOP_URL || 'https://shopcircuit-production.up.railway.app';
+      const shopUrl = process.env.NEXT_PUBLIC_SHOP_URL || 'http://localhost:3003';
       window.location.href = `${shopUrl}/account`;
     }
   }, [isAuthenticated]);
@@ -29,7 +29,7 @@ export default function LoginPage() {
 
     try {
       await login(identifier, password);
-      const shopUrl = process.env.NEXT_PUBLIC_SHOP_URL || 'https://shopcircuit-production.up.railway.app';
+      const shopUrl = process.env.NEXT_PUBLIC_SHOP_URL || 'http://localhost:3003';
       window.location.href = `${shopUrl}/account`;
     } catch (err) {
       if (err instanceof Error && err.message === 'PHONE_VERIFICATION_REQUIRED') {

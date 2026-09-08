@@ -91,7 +91,7 @@ export function CategoriesPage({ apiFetch }: { apiFetch: ApiFetch }) {
     <div className="space-y-6">
       <PageHeader
         title="Categories"
-        description="Manage product categories and their specification schemas."
+        subtitle="Manage product categories and their specification schemas."
       />
 
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">

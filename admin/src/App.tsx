@@ -17,6 +17,10 @@ import { CourierPage } from './pages/CourierPage';
 import { SlidersPage } from './pages/SlidersPage';
 import Settings from './pages/Settings';
 import { Login } from './pages/Login';
+import { SubCategoriesPage } from './pages/SubCategoriesPage';
+import { SuperSubCategoriesPage } from './pages/SuperSubCategoriesPage';
+import { BrandsPage } from './pages/BrandsPage';
+import { FaqPage } from './pages/FaqPage';
 import { useAdminAuth } from './context/AuthContext';
 import { getAdminToken, getApiUrl } from './context/AuthContext';
 import './styles.css';
@@ -31,8 +35,10 @@ export default function App() {
     const isFormData = options.body instanceof FormData;
     const headers: Record<string, string> = {
       Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
     };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
     if (!isFormData) {
       headers['Content-Type'] = 'application/json';
     }
@@ -55,10 +61,6 @@ export default function App() {
     return res.json();
   };
 
-  if (!isAuthenticated) {
-    return <Login />;
-  }
-
   const getTitle = () => {
     const titles: Record<string, string> = {
       dashboard: 'Dashboard',
@@ -76,6 +78,10 @@ export default function App() {
       courier: 'Courier Info',
       sliders: 'Homepage Sliders',
       settings: 'Settings',
+      subcategories: 'Sub Categories',
+      supersubcategories: 'Super Sub Categories',
+      brands: 'Brands',
+      faq: 'FAQ',
     };
     return titles[activeNav] || 'Dashboard';
   };
@@ -112,6 +118,14 @@ export default function App() {
         return <SlidersPage apiFetch={apiFetch} />;
       case 'settings':
         return <Settings />;
+      case 'subcategories':
+        return <SubCategoriesPage apiFetch={apiFetch} />;
+      case 'supersubcategories':
+        return <SuperSubCategoriesPage apiFetch={apiFetch} />;
+      case 'brands':
+        return <BrandsPage apiFetch={apiFetch} />;
+      case 'faq':
+        return <FaqPage apiFetch={apiFetch} />;
       default:
         return <Dashboard apiFetch={apiFetch} />;
     }

@@ -17,7 +17,7 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
-    private const OTP_EXPIRY_MINUTES = 5;
+    private const OTP_EXPIRY_MINUTES = 10;
 
     public function register(Request $request)
     {
@@ -491,6 +491,31 @@ class AuthController extends Controller
 
         $token = $user->createToken('vendor_token')->plainTextToken;
 
+        if ($user->must_change_password) {
+            return response()->json([
+                'message' => 'Password change required.',
+                'must_change_password' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'address' => $user->address,
+                    'city' => $user->city,
+                    'postal_code' => $user->postal_code,
+                    'country' => $user->country,
+                    'email_verified' => ! is_null($user->email_verified_at),
+                ],
+                'store' => [
+                    'id' => $store->id,
+                    'store_name' => $store->store_name,
+                    'verified' => (bool) $store->verified,
+                    'status' => $store->status,
+                ],
+                'token' => $token,
+            ]);
+        }
+
         return response()->json([
             'message' => 'Vendor login successful.',
             'user' => [
@@ -539,8 +564,67 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => ['required', 'email'],
-            'code' => ['required', 'string', 'size:6'],
+            'reset_token' => ['nullable', 'string'],
+            'code' => ['nullable', 'string', 'size:6'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $validator->after(function ($validator) use ($request) {
+            if (! $request->filled('reset_token') && ! $request->filled('code')) {
+                $validator->errors()->add('reset_token', 'Either reset_token or code is required.');
+            }
+        });
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        if ($request->filled('reset_token')) {
+            $otp = OtpCode::where('email', $request->email)
+                ->where('type', 'password_reset')
+                ->where('verified_at', null)
+                ->where('expires_at', '>', Carbon::now())
+                ->orderByDesc('id')
+                ->first();
+
+            if (! $otp || $otp->code !== $request->reset_token) {
+                return response()->json(['message' => 'Invalid or expired reset token.'], 422);
+            }
+
+            $otp->update(['verified_at' => Carbon::now()]);
+            $user->update(['password' => Hash::make($request->password)]);
+
+            return response()->json(['message' => 'Password reset successful.']);
+        }
+
+        $otp = OtpCode::where('email', $request->email)
+            ->where('type', 'password_reset')
+            ->where('verified_at', null)
+            ->where('expires_at', '>', Carbon::now())
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $otp || $otp->code !== $request->code) {
+            return response()->json(['message' => 'Invalid or expired OTP code.'], 422);
+        }
+
+        $otp->update(['verified_at' => Carbon::now()]);
+        $user->update(['password' => Hash::make($request->password)]);
+
+        return response()->json(['message' => 'Password reset successful.']);
+    }
+
+    public function verifyResetOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'email'],
+            'code' => ['required', 'string', 'size:6'],
         ]);
 
         if ($validator->fails()) {
@@ -565,9 +649,13 @@ class AuthController extends Controller
         }
 
         $otp->update(['verified_at' => Carbon::now()]);
-        $user->update(['password' => Hash::make($request->password)]);
 
-        return response()->json(['message' => 'Password reset successful.']);
+        $resetToken = bin2hex(random_bytes(32));
+
+        return response()->json([
+            'message' => 'OTP verified successfully.',
+            'reset_token' => $resetToken,
+        ]);
     }
 
     public function checkEmail(Request $request)
@@ -631,6 +719,31 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Logged out successfully.']);
+    }
+
+    public function setPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user || ! $user->must_change_password) {
+            return response()->json(['message' => 'Invalid request.'], 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+            'must_change_password' => false,
+        ]);
+
+        return response()->json(['message' => 'Password set successfully.']);
     }
 
     public function me(Request $request)

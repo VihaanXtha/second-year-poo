@@ -10,11 +10,12 @@ import { Orders } from './pages/Orders';
 import { Sales } from './pages/Sales';
 import { Analytics } from './pages/Analytics';
 import { Reviews } from './pages/Reviews';
+import { SetPassword } from './pages/SetPassword';
 
 export type ApiFetch = <T = any>(endpoint: string, options?: RequestInit) => Promise<T>;
 
 export default function App() {
-  const { isAuthenticated, loading, logout } = useVendorAuth();
+  const { isAuthenticated, loading, logout, mustChangePassword } = useVendorAuth();
   const [activeNav, setActiveNav] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
 
@@ -59,6 +60,10 @@ export default function App() {
 
   if (!isAuthenticated) {
     return <Login />;
+  }
+
+  if (mustChangePassword) {
+    return <SetPassword />;
   }
 
   const renderPage = () => {

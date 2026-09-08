@@ -32,6 +32,7 @@ Route::middleware('web')->group(function () {
 });
 Route::post('/auth/vendor-login', [AuthController::class, 'vendorLogin'])->middleware('throttle:10,1');
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+Route::post('/auth/verify-reset-otp', [AuthController::class, 'verifyResetOtp'])->middleware('throttle:5,1');
 Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 Route::post('/auth/check-email', [AuthController::class, 'checkEmail'])->middleware('throttle:30,1');
 
@@ -55,6 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/update-profile', [AuthController::class, 'updateProfile']);
+    Route::post('/auth/set-password', [AuthController::class, 'setPassword']);
 
     // Customer routes
     Route::post('/orders', [OrderController::class, 'store']);
@@ -143,8 +145,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::post('/vendors/{vendorStore}/suspend', [AdminController::class, 'suspendVendor']);
     Route::get('/vendor-applications', [AdminController::class, 'vendorApplications']);
     Route::get('/new-vendor-applications', [AdminController::class, 'newVendorApplications']);
-    Route::post('/vendor-applications/{vendorStore}/approve', [AdminController::class, 'approveVendor']);
-    Route::post('/vendor-applications/{vendorStore}/reject', [AdminController::class, 'rejectVendor']);
+    Route::post('/vendor-applications/{vendorApplication}/approve', [AdminController::class, 'approveVendor']);
+    Route::post('/vendor-applications/{vendorApplication}/reject', [AdminController::class, 'rejectVendor']);
     Route::get('/products', [AdminController::class, 'products']);
     Route::delete('/products/{product}', [AdminController::class, 'deleteProduct']);
     Route::get('/orders', [AdminController::class, 'orders']);
@@ -157,6 +159,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 // Vendor routes
 Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(function () {
     Route::post('/store', [VendorController::class, 'registerStore']);
+    Route::put('/store', [VendorController::class, 'updateStore']);
     Route::get('/store', [VendorController::class, 'myStore']);
 
     Route::get('/products', [VendorController::class, 'products']);

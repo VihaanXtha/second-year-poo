@@ -39,7 +39,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      const shopUrl = process.env.NEXT_PUBLIC_SHOP_URL || 'https://shopcircuit-production.up.railway.app';
+      const shopUrl = process.env.NEXT_PUBLIC_SHOP_URL || 'http://localhost:3003';
       window.location.href = `${shopUrl}/account`;
     }
   }, [isAuthenticated]);
@@ -97,7 +97,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await verifyPhoneOtp(registeredUser!.id, phoneOtp);
-      const shopUrl = process.env.NEXT_PUBLIC_SHOP_URL || 'https://shopcircuit-production.up.railway.app';
+      const shopUrl = process.env.NEXT_PUBLIC_SHOP_URL || 'http://localhost:3003';
       window.location.href = `${shopUrl}/account`;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed");

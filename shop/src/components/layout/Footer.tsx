@@ -74,9 +74,9 @@ export default function Footer() {
         <div className="mt-12 border-t border-slate-200 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-slate-500">© 2026 Circuit Bazaar. Nepal&apos;s Technical Hardware Hub.</p>
           <div className="flex items-center gap-4 text-slate-400">
-            <a href="#" className="hover:text-slate-600"><span className="material-symbols-outlined text-[20px]">public</span></a>
-            <a href="#" className="hover:text-slate-600"><span className="material-symbols-outlined text-[20px]">mail</span></a>
-            <a href="#" className="hover:text-slate-600"><span className="material-symbols-outlined text-[20px]">phone_in_talk</span></a>
+            <button type="button" className="hover:text-slate-600" aria-label="Website"><span className="material-symbols-outlined text-[20px]">public</span></button>
+            <button type="button" className="hover:text-slate-600" aria-label="Email"><span className="material-symbols-outlined text-[20px]">mail</span></button>
+            <button type="button" className="hover:text-slate-600" aria-label="Phone"><span className="material-symbols-outlined text-[20px]">phone_in_talk</span></button>
           </div>
         </div>
       </div>

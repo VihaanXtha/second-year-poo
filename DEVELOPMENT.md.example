@@ -1,0 +1,148 @@
+# Circuit Bazaar — Local Development Guide (Template)
+
+**This file IS committed.** It contains placeholder values so new developers know what to fill in.
+
+For the local-only version with real values (git-ignored), see `DEVELOPMENT.md`.
+
+---
+
+## One-Command Bootstrap
+
+```bash
+docker compose up --build
+```
+
+After first boot, run migrations:
+
+```bash
+docker compose exec backend php artisan migrate --seed
+```
+
+Stop (keep database):
+
+```bash
+docker compose down
+```
+
+Stop and wipe database:
+
+```bash
+docker compose down -v
+```
+
+---
+
+## Local Port Map
+
+| Service | Port | URL |
+|---------|------|-----|
+| MySQL | 3306 | `mysql://root:root@localhost:3306` |
+| Backend (Laravel) | 8000 | `http://localhost:8000` |
+| Customer Frontend | 3000 | `http://localhost:3000` |
+| Admin Portal | 3001 | `http://localhost:3001` |
+| Vendor Portal | 3002 | `http://localhost:3002` |
+| Shop | 3003 | `http://localhost:3003` |
+
+---
+
+## Environment Variables Per Service
+
+### Backend (`backend/.env` — git-ignored)
+
+| Variable | Description | Where to get it |
+|----------|-------------|-----------------|
+| `APP_NAME` | Application name | Any string |
+| `APP_ENV` | Environment mode | `local` / `production` |
+| `APP_KEY` | Laravel encryption key | `php artisan key:generate` |
+| `APP_DEBUG` | Show debug errors | `true` locally, `false` in production |
+| `APP_URL` | Base URL of backend | `http://localhost:8000` locally |
+| `DB_CONNECTION` | Database driver | `mysql` |
+| `DB_HOST` | MySQL host | `mysql` |
+| `DB_PORT` | MySQL port | `3306` |
+| `DB_DATABASE` | Database name | `circuit_bazaar` |
+| `DB_USERNAME` | Database user | `circuit` |
+| `DB_PASSWORD` | Database password | `circuit` |
+| `BROADCAST_CONNECTION` | Broadcasting driver | `reverb` |
+| `FILESYSTEM_DISK` | Default storage disk | `public` |
+| `QUEUE_CONNECTION` | Queue driver | `database` |
+| `CACHE_STORE` | Cache driver | `database` |
+| `SESSION_DRIVER` | Session driver | `database` |
+| `SESSION_LIFETIME` | Session timeout (min) | `120` |
+| `MAIL_MAILER` | Mail transport | `log` (dev) / `smtp` (prod) |
+| `MAIL_HOST` | SMTP host | e.g. `smtp.gmail.com` |
+| `MAIL_PORT` | SMTP port | e.g. `587` |
+| `MAIL_USERNAME` | SMTP username | Your email |
+| `MAIL_PASSWORD` | SMTP password | Your app password |
+| `MAIL_ENCRYPTION` | SMTP encryption | `tls` |
+| `MAIL_FROM_ADDRESS` | Sender email | `noreply@circuitbazaar.com` |
+| `MAIL_FROM_NAME` | Sender name | `Circuit Bazaar` |
+| `REVERB_APP_ID` | Reverb app ID | Any string |
+| `REVERB_APP_KEY` | Reverb app key | Any string |
+| `REVERB_APP_SECRET` | Reverb app secret | Any string |
+| `REVERB_HOST` | Reverb host | `0.0.0.0` |
+| `REVERB_PORT` | Reverb port | `8080` |
+| `REVERB_SCHEME` | Reverb scheme | `http` |
+| `REVERB_SERVER_HOST` | Reverb server bind | `0.0.0.0` |
+| `REVERB_SERVER_PORT` | Reverb server port | `8080` |
+| `TWILIO_SID` | Twilio account SID | From twilio.com console |
+| `TWILIO_TOKEN` | Twilio auth token | From twilio.com console |
+| `TWILIO_FROM` | Twilio sender number | Your Twilio number |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | From Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | From Google Cloud Console |
+| `GOOGLE_REDIRECT_URI` | Google OAuth redirect URI | `${APP_URL}/api/auth/google/callback` |
+| `CORS_ALLOWED_ORIGINS` | Production CORS origins (comma-separated) | Your Railway/Vercel URLs |
+| `AWS_ACCESS_KEY_ID` | AWS access key (S3) | From AWS console |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key | From AWS console |
+| `AWS_DEFAULT_REGION` | AWS region | `us-east-1` |
+| `AWS_BUCKET` | S3 bucket name | Your bucket |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | From Cloudinary dashboard |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | From Cloudinary dashboard |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | From Cloudinary dashboard |
+
+### Frontend (`frontend/.env.local` — git-ignored)
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_API_URL` | Backend API — `http://localhost:8000/api` locally |
+| `NEXT_PUBLIC_APP_URL` | This app — `http://localhost:3000` |
+| `NEXT_PUBLIC_SHOP_URL` | Shop app — `http://localhost:3003` |
+| `NEXT_PUBLIC_VENDOR_URL` | Vendor portal — `http://localhost:3002` |
+| `NEXT_PUBLIC_ADMIN_URL` | Admin portal — `http://localhost:3001` |
+
+### Admin (`admin/.env` — git-ignored)
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_API_URL` | Backend API — `http://localhost:8000/api` locally |
+| `VITE_APP_URL` | This app — `http://localhost:3001` |
+| `VITE_VENDOR_URL` | Vendor portal — `http://localhost:3002` |
+| `VITE_SHOP_URL` | Shop app — `http://localhost:3003` |
+| `VITE_PMA_URL` | phpMyAdmin — `http://localhost:8081` |
+
+### Vendor (`vendor/.env` — git-ignored)
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_API_URL` | Backend API — `http://localhost:8000/api` locally |
+| `VITE_APP_URL` | This app — `http://localhost:3002` |
+| `VITE_ADMIN_URL` | Admin portal — `http://localhost:3001` |
+| `VITE_SHOP_URL` | Shop app — `http://localhost:3003` |
+
+### Shop (`shop/.env.local` — git-ignored)
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_API_URL` | Backend API — `http://localhost:8000/api` locally |
+| `NEXT_PUBLIC_APP_URL` | This app — `http://localhost:3003` |
+| `NEXT_PUBLIC_VENDOR_URL` | Vendor portal — `http://localhost:3002` |
+| `NEXT_PUBLIC_ADMIN_URL` | Admin portal — `http://localhost:3001` |
+
+---
+
+## Secrets Policy
+
+Real values live **only** in each service's own untracked `.env` / `.env.local` file.
+
+- `.env`, `.env.local`, `.env.*.local` are all git-ignored.
+- `.env.example` files are committed with **placeholder values only**.
+- Never paste real API keys, database passwords, or mail credentials into shared docs or chat.

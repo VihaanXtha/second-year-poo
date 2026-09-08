@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 import type { HomepageSlider } from '@/lib/api';
 
@@ -28,7 +29,48 @@ export default function HomepageSlider() {
     return () => clearInterval(timer);
   }, [sliders.length]);
 
-  if (loading || sliders.length === 0) return null;
+  if (loading) {
+    return (
+      <section className="relative overflow-hidden bg-slate-900">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+          <div className="max-w-2xl">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white">
+              Circuit Bazaar
+            </h1>
+            <p className="mt-4 text-lg text-slate-300">
+              Nepal&apos;s specification-first hardware marketplace.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (sliders.length === 0) {
+    return (
+      <section className="relative overflow-hidden bg-slate-900">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+          <div className="max-w-2xl">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white">
+              Circuit Bazaar
+            </h1>
+            <p className="mt-4 text-lg text-slate-300">
+              Nepal&apos;s specification-first hardware marketplace.
+            </p>
+            <Link
+              href="/shop"
+              className="mt-8 inline-flex items-center justify-center rounded-lg bg-red-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-red-700 transition-colors"
+            >
+              Shop Verified Hardware
+              <span className="material-symbols-outlined ml-2 text-[18px]">
+                arrow_forward
+              </span>
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const slider = sliders[current];
 

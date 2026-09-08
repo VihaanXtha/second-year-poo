@@ -45,6 +45,9 @@ assets/
 nginx/
 scripts/
 
+# Local-only docs (never commit real setup details)
+DEVELOPMENT.md
+
 # Docker (local dev only — Railway/Vercel use their own)
 docker-compose.yml
 docker-compose*.yml

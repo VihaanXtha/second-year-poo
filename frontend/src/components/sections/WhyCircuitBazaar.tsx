@@ -1,3 +1,5 @@
+import ScrollReveal from "@/components/ScrollReveal";
+
 const features = [
   {
     title: "Verified Vendor Network",
@@ -33,35 +35,40 @@ const features = [
 
 export default function WhyCircuitBazaar() {
   return (
-    <section id="why" className="bg-slate-50 py-20">
+    <section id="why" className="relative overflow-hidden bg-slate-50 py-20">
+      <div className="absolute inset-0 -z-10 circuit-bg opacity-40" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
-            Why buyers choose Circuit Bazaar
-          </h2>
-          <p className="mt-4 text-lg text-slate-600">
-            We built the marketplace we wished existed when we were students sourcing
-            components for our projects.
-          </p>
-        </div>
-        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="rounded-2xl bg-white p-6 ring-1 ring-slate-200 hover:ring-slate-300 transition-shadow"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600">
-                <span className="material-symbols-outlined text-[24px]">
-                  {feature.icon}
-                </span>
+        <ScrollReveal direction="up">
+          <div className="text-center max-w-3xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
+              Why buyers choose Circuit Bazaar
+            </h2>
+            <p className="mt-4 text-lg text-slate-600">
+              We built the marketplace we wished existed when we were students sourcing
+              components for our projects.
+            </p>
+          </div>
+        </ScrollReveal>
+        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature, i) => (
+            <ScrollReveal key={feature.title} direction="up" delay={i * 100}>
+              <div
+                className="group relative rounded-2xl bg-white p-6 ring-1 ring-slate-200 hover:ring-red-200 transition-all duration-500 hover:shadow-xl hover:shadow-red-500/5 hover:-translate-y-1 tilt-card cursor-default"
+                style={{ transformStyle: "preserve-3d" }}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white transition-colors duration-300">
+                  <span className="material-symbols-outlined text-[24px]">
+                    {feature.icon}
+                  </span>
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-slate-900">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                  {feature.description}
+                </p>
               </div>
-              <h3 className="mt-4 text-base font-semibold text-slate-900">
-                {feature.title}
-              </h3>
-              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                {feature.description}
-              </p>
-            </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>

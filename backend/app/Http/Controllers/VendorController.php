@@ -26,16 +26,44 @@ class VendorController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'address' => ['nullable', 'string', 'max:500'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'pan_number' => ['required', 'string', 'max:50', 'regex:/^[A-Z]{3}[0-9]{7}$|^[0-9]{8,10}$/'],
+            'pan_number' => ['required', 'string', 'max:50', 'regex:/^[A-Z]{3}[0-9]{7}$|^[0-9]{8,10}$/],
             'country' => ['nullable', 'string', 'max:100'],
             'province' => ['nullable', 'string', 'max:100'],
             'district' => ['nullable', 'string', 'max:100'],
             'municipality' => ['nullable', 'string', 'max:100'],
             'ward' => ['nullable', 'string', 'max:20'],
-            'postal_code' => ['nullable', 'string', 'max:20'],
+            'postal_code' => ['nullable', 'string', 'max:20],
         ]);
 
-        $store = VendorStore::create(array_merge($validated, [
+        $data = $validated;
+
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            if (! in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp'])) {
+                return response()->json(['message' => 'Logo must be jpeg, png, or webp.'], 422);
+            }
+            if ($file->getSize() > 2 * 1024 * 1024) {
+                return response()->json(['message' => 'Logo must not exceed 2MB.'], 422);
+            }
+            $data['logo'] = $this->uploadStoreImage($file);
+        } elseif ($request->filled('logo_url')) {
+            $data['logo'] = $request->input('logo_url');
+        }
+
+        if ($request->hasFile('banner')) {
+            $file = $request->file('banner');
+            if (! in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp'])) {
+                return response()->json(['message' => 'Banner must be jpeg, png, or webp.'], 422);
+            }
+            if ($file->getSize() > 2 * 1024 * 1024) {
+                return response()->json(['message' => 'Banner must not exceed 2MB.'], 422);
+            }
+            $data['banner'] = $this->uploadStoreImage($file);
+        } elseif ($request->filled('banner_url')) {
+            $data['banner'] = $request->input('banner_url');
+        }
+
+        $store = VendorStore::create(array_merge($data, [
             'user_id' => Auth::id(),
             'status' => 'pending',
         ]));
@@ -44,6 +72,51 @@ class VendorController extends Controller
         $user->update(['role' => 'vendor']);
 
         return response()->json(['message' => 'Store registered successfully.', 'store' => $store], 201);
+    }
+
+    public function updateStore(Request $request)
+    {
+        $store = VendorStore::where('user_id', Auth::id())->firstOrFail();
+
+        $validated = $request->validate([
+            'store_name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'status' => ['required', 'in:active,on_hold,closed,pending,suspended'],
+        ]);
+
+        $data = $validated;
+
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            if (! in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp'])) {
+                return response()->json(['message' => 'Logo must be jpeg, png, or webp.'], 422);
+            }
+            if ($file->getSize() > 2 * 1024 * 1024) {
+                return response()->json(['message' => 'Logo must not exceed 2MB.'], 422);
+            }
+            $data['logo'] = $this->uploadStoreImage($file);
+        } elseif ($request->filled('logo_url')) {
+            $data['logo'] = $request->input('logo_url');
+        }
+
+        if ($request->hasFile('banner')) {
+            $file = $request->file('banner');
+            if (! in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp'])) {
+                return response()->json(['message' => 'Banner must be jpeg, png, or webp.'], 422);
+            }
+            if ($file->getSize() > 2 * 1024 * 1024) {
+                return response()->json(['message' => 'Banner must not exceed 2MB.'], 422);
+            }
+            $data['banner'] = $this->uploadStoreImage($file);
+        } elseif ($request->filled('banner_url')) {
+            $data['banner'] = $request->input('banner_url');
+        }
+
+        $store->update($data);
+
+        return response()->json(['message' => 'Store updated.', 'store' => $store]);
     }
 
     public function myStore()
@@ -236,6 +309,11 @@ class VendorController extends Controller
     private function uploadProductImage(UploadedFile $file): ?string
     {
         return $this->cloudinary->upload($file);
+    }
+
+    private function uploadStoreImage(UploadedFile $file): ?string
+    {
+        return $this->cloudinary->upload($file, 'circuit-bazaar/stores');
     }
 
     private function validateSpecs(array $specs, ?array $schema): array

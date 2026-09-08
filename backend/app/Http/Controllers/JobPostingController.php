@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\JobApplication;
 use App\Models\JobPosting;
+use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class JobPostingController extends Controller
 {
+    public function __construct(private CloudinaryService $cloudinary) {}
+
     public function index()
     {
         $postings = JobPosting::orderByDesc('application_deadline')
@@ -101,13 +104,17 @@ class JobPostingController extends Controller
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
             'notice_period' => ['nullable', Rule::in(['15_days', '1_month', '2_months', '3_months'])],
+            'cv' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
             'cv_base64' => ['nullable', 'string'],
             'cv_filename' => ['nullable', 'string', 'max:255'],
         ]);
 
         $cvUrl = null;
 
-        if (! empty($validated['cv_base64'])) {
+        if ($request->hasFile('cv')) {
+            $file = $request->file('cv');
+            $cvUrl = $this->cloudinary->uploadRaw($file, 'circuit-bazaar/cvs');
+        } elseif (! empty($validated['cv_base64'])) {
             $base64 = $validated['cv_base64'];
             if (str_contains($base64, ',')) {
                 $base64 = explode(',', $base64, 2)[1];

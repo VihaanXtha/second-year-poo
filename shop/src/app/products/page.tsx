@@ -76,7 +76,7 @@ export default function ProductsPage() {
   };
 
   const buildProductUrl = (params: Record<string, string>) => {
-    const url = new URL("/products", typeof window !== "undefined" ? window.location.origin : "http://localhost");
+    const url = new URL("/products", typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || "http://localhost");
     url.searchParams.set("search", search);
     if (categoryParam) url.searchParams.set("category", categoryParam);
     for (const [key, value] of Object.entries(params)) {
@@ -99,7 +99,7 @@ export default function ProductsPage() {
                 defaultValue={search}
                 className="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm focus:outline-none focus:border-red-500"
                 onChange={(e) => {
-                  const url = new URL("/products", typeof window !== "undefined" ? window.location.origin : "http://localhost");
+                  const url = new URL("/products", typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || "http://localhost");
                   url.searchParams.set("search", e.target.value);
                   if (categoryParam) url.searchParams.set("category", categoryParam);
                   window.location.href = url.pathname + url.search;
@@ -112,7 +112,7 @@ export default function ProductsPage() {
               <select
                 value={categoryParam}
                 onChange={(e) => {
-                  const url = new URL("/products", typeof window !== "undefined" ? window.location.origin : "http://localhost");
+                  const url = new URL("/products", typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || "http://localhost");
                   if (e.target.value) url.searchParams.set("category", e.target.value);
                   url.searchParams.set("search", search);
                   window.location.href = url.pathname + url.search;

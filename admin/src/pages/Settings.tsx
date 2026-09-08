@@ -3,7 +3,7 @@
 import React from 'react';
 import { Database, ExternalLink } from 'lucide-react';
 
-const PMA_URL = 'http://localhost:8081';
+const PMA_URL = import.meta.env.VITE_PMA_URL || 'http://localhost:8081';
 
 export default function Settings() {
   return (

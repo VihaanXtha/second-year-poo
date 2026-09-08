@@ -8,7 +8,6 @@ import {
   PrimaryButton,
   SecondaryButton,
   SelectField,
-  Spinner,
   TextField,
 } from '../components/UI';
 import { Modal } from '../components/Modal';
@@ -37,9 +36,22 @@ const initialStoreForm = (s?: any): StoreForm => ({
   status: s?.status || 'active',
 });
 
+function readFilePreview(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function StorePage({ apiFetch }: StorePageProps) {
   const { store, user, refreshStore } = useVendorAuth();
   const [form, setForm] = useState<StoreForm>(initialStoreForm(store));
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +59,31 @@ export function StorePage({ apiFetch }: StorePageProps) {
 
   useEffect(() => {
     if (store) setForm(initialStoreForm(store));
+    setLogoFile(null);
+    setBannerFile(null);
+    setLogoPreview(null);
+    setBannerPreview(null);
   }, [store]);
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setLogoFile(file);
+    if (file) {
+      setLogoPreview(await readFilePreview(file));
+    } else {
+      setLogoPreview(null);
+    }
+  };
+
+  const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setBannerFile(file);
+    if (file) {
+      setBannerPreview(await readFilePreview(file));
+    } else {
+      setBannerPreview(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,24 +91,40 @@ export function StorePage({ apiFetch }: StorePageProps) {
     setMessage(null);
     setError(null);
     try {
-      const payload = {
-        store_name: form.store_name,
-        description: form.description,
-        address: form.address,
-        phone: form.phone,
-        logo_url: form.logo_url,
-        banner_url: form.banner_url,
-        status: form.status,
-      };
+      const hasFiles = !!(logoFile || bannerFile);
+      const payload = new FormData();
+      payload.append('store_name', form.store_name);
+      payload.append('description', form.description);
+      payload.append('address', form.address);
+      payload.append('phone', form.phone);
+      payload.append('status', form.status);
+      if (logoFile) payload.append('logo', logoFile);
+      if (bannerFile) payload.append('banner', bannerFile);
+      if (!logoFile && form.logo_url) payload.append('logo_url', form.logo_url);
+      if (!bannerFile && form.banner_url) payload.append('banner_url', form.banner_url);
+
       const method = store ? 'PUT' : 'POST';
-      const endpoint = store ? '/vendor/store' : '/vendor/store';
+      const endpoint = '/vendor/store';
       const data = await apiFetch<any>(endpoint, {
         method,
-        body: JSON.stringify(payload),
+        body: hasFiles ? payload : JSON.stringify({
+          store_name: form.store_name,
+          description: form.description,
+          address: form.address,
+          phone: form.phone,
+          logo_url: form.logo_url,
+          banner_url: form.banner_url,
+          status: form.status,
+        }),
+        ...(hasFiles ? {} : { headers: { 'Content-Type': 'application/json' } }),
       });
       const next = data.store || data;
       if (next) refreshStore(next);
       setMessage({ type: 'ok', text: 'Store details saved successfully.' });
+      setLogoFile(null);
+      setBannerFile(null);
+      setLogoPreview(null);
+      setBannerPreview(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save store');
     } finally {
@@ -117,9 +169,20 @@ export function StorePage({ apiFetch }: StorePageProps) {
               setSaving(true);
               setError(null);
               try {
+                const hasFiles = !!(logoFile || bannerFile);
+                const payload = new FormData();
+                payload.append('store_name', form.store_name);
+                payload.append('description', form.description);
+                payload.append('address', form.address);
+                payload.append('phone', form.phone);
+                if (logoFile) payload.append('logo', logoFile);
+                if (bannerFile) payload.append('banner', bannerFile);
+                if (!logoFile && form.logo_url) payload.append('logo_url', form.logo_url);
+                if (!bannerFile && form.banner_url) payload.append('banner_url', form.banner_url);
+
                 const data = await apiFetch<any>('/vendor/store', {
                   method: 'POST',
-                  body: JSON.stringify({
+                  body: hasFiles ? payload : JSON.stringify({
                     store_name: form.store_name,
                     description: form.description,
                     address: form.address,
@@ -127,10 +190,15 @@ export function StorePage({ apiFetch }: StorePageProps) {
                     logo_url: form.logo_url,
                     banner_url: form.banner_url,
                   }),
+                  ...(hasFiles ? {} : { headers: { 'Content-Type': 'application/json' } }),
                 });
                 const next = data.store || data;
                 if (next) refreshStore(next);
                 setOpenRegister(false);
+                setLogoFile(null);
+                setBannerFile(null);
+                setLogoPreview(null);
+                setBannerPreview(null);
               } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to register store');
               } finally {
@@ -167,6 +235,30 @@ export function StorePage({ apiFetch }: StorePageProps) {
                 onChange={(v) => setForm({ ...form, address: v })}
                 placeholder="Kathmandu, Nepal"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Logo</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              />
+              {logoPreview && (
+                <img src={logoPreview} alt="Logo preview" className="mt-2 h-16 w-16 object-cover rounded-lg border border-slate-200" />
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Banner</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleBannerChange}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              />
+              {bannerPreview && (
+                <img src={bannerPreview} alt="Banner preview" className="mt-2 h-16 w-16 object-cover rounded-lg border border-slate-200" />
+              )}
             </div>
             <TextField
               label="Logo URL"
@@ -263,6 +355,38 @@ export function StorePage({ apiFetch }: StorePageProps) {
                 onChange={(v) => setForm({ ...form, address: v })}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Logo</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              />
+              {(logoPreview || form.logo_url) && (
+                <img
+                  src={logoPreview || form.logo_url}
+                  alt="Logo preview"
+                  className="mt-2 h-16 w-16 object-cover rounded-lg border border-slate-200"
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Banner</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleBannerChange}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              />
+              {(bannerPreview || form.banner_url) && (
+                <img
+                  src={bannerPreview || form.banner_url}
+                  alt="Banner preview"
+                  className="mt-2 h-16 w-16 object-cover rounded-lg border border-slate-200"
+                />
+              )}
+            </div>
             <TextField
               label="Logo URL"
               value={form.logo_url}
@@ -354,9 +478,9 @@ export function StorePage({ apiFetch }: StorePageProps) {
           <Card title="Branding preview" subtitle="How customers see your store">
             <div className="overflow-hidden rounded-xl border border-slate-200">
               <div className="relative h-32 w-full bg-gradient-to-br from-red-100 via-red-50 to-slate-100">
-                {form.banner_url ? (
+                {bannerPreview || form.banner_url ? (
                   <img
-                    src={form.banner_url}
+                    src={bannerPreview || form.banner_url}
                     alt="banner"
                     className="h-full w-full object-cover"
                     onError={(e) => ((e.currentTarget.style.display = 'none'))}
@@ -369,8 +493,8 @@ export function StorePage({ apiFetch }: StorePageProps) {
               </div>
               <div className="-mt-10 flex items-end gap-3 px-4 pb-4">
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-red-100 text-lg font-bold text-red-700 shadow">
-                  {form.logo_url ? (
-                    <img src={form.logo_url} alt="logo" className="h-full w-full object-cover" />
+                  {logoPreview || form.logo_url ? (
+                    <img src={logoPreview || form.logo_url} alt="logo" className="h-full w-full object-cover" />
                   ) : (
                     (form.store_name?.[0] || 'S').toUpperCase()
                   )}

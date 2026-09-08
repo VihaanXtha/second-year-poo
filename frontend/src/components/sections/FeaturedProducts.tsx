@@ -2,6 +2,7 @@
 
 import { PRODUCTS } from "@/data/hardwareData";
 import Link from "next/link";
+import { useState, useRef } from "react";
 
 function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
   return (
@@ -12,17 +13,14 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
           alt={product.name}
           className="h-full w-full object-cover"
         />
-        <span className="absolute top-3 left-3 rounded-md bg-white/90 px-2 py-1 text-[10px] font-mono font-bold text-slate-900 backdrop-blur-sm">
+        <span className="absolute top-3 left-3 rounded-lg bg-white/90 px-2 py-1 text-xs font-mono font-bold text-slate-900 backdrop-blur-sm">
           {product.sku}
         </span>
       </div>
       <div className="p-5">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded">
-            {product.category}
-          </span>
-          <span className="text-xs text-slate-500">{product.vendorName}</span>
-        </div>
+        <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded">
+          {product.category}
+        </span>
         <h3 className="mt-3 text-sm font-semibold text-slate-900 leading-snug line-clamp-2">
           {product.name}
         </h3>
@@ -44,6 +42,23 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
 
 export default function FeaturedProducts() {
   const featured = PRODUCTS.slice(0, 6);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  };
+
+  const scroll = (direction: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction * 320, behavior: "smooth" });
+    setTimeout(checkScroll, 350);
+  };
 
   return (
     <section id="featured" className="bg-white py-20">
@@ -58,7 +73,7 @@ export default function FeaturedProducts() {
             </p>
           </div>
           <Link
-            href="#"
+            href="/shop"
             className="hidden sm:inline-flex items-center text-sm font-semibold text-red-600 hover:text-red-700"
           >
             View all products
@@ -67,16 +82,42 @@ export default function FeaturedProducts() {
             </span>
           </Link>
         </div>
-        <div className="mt-10 -mx-4 px-4 overflow-x-auto pb-4">
-          <div className="flex gap-6">
-            {featured.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+        <div className="mt-10 relative">
+          {canScrollLeft && (
+            <button
+              type="button"
+              onClick={() => scroll(-1)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-slate-200 text-slate-700 hover:bg-slate-50"
+              aria-label="Scroll products left"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+            </button>
+          )}
+          {canScrollRight && (
+            <button
+              type="button"
+              onClick={() => scroll(1)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-slate-200 text-slate-700 hover:bg-slate-50"
+              aria-label="Scroll products right"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+            </button>
+          )}
+          <div
+            ref={scrollRef}
+            onScroll={checkScroll}
+            className="-mx-4 px-4 overflow-x-auto pb-4 no-scrollbar"
+          >
+            <div className="flex gap-6">
+              {featured.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
         </div>
         <div className="mt-6 sm:hidden text-center">
           <Link
-            href="#"
+            href="/shop"
             className="inline-flex items-center text-sm font-semibold text-red-600 hover:text-red-700"
           >
             View all products

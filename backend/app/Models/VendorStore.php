@@ -11,11 +11,23 @@ class VendorStore extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'store_name', 'description', 'logo', 'address', 'phone', 'verified', 'status'];
+    protected $fillable = ['user_id', 'store_name', 'description', 'logo', 'banner', 'address', 'phone', 'verified', 'status'];
 
     protected $casts = [
         'verified' => 'boolean',
     ];
+
+    protected $appends = ['logo_url', 'banner_url'];
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->logo;
+    }
+
+    public function getBannerUrlAttribute(): ?string
+    {
+        return $this->banner;
+    }
 
     public function user(): BelongsTo
     {

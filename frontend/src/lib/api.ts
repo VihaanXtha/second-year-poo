@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export async function apiClient<T = unknown>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;
@@ -11,17 +11,31 @@ export async function apiClient<T = unknown>(path: string, options?: RequestInit
   });
 
   if (!response.ok) {
-    let errorMessage = 'Request failed';
+    let errorMessage = `Request failed: ${response.status} ${response.statusText}`;
     try {
-      const error = await response.json();
-      errorMessage = typeof error?.message === 'string' ? error.message : errorMessage;
+      const text = await response.text();
+      if (text.trim()) {
+        try {
+          const error = JSON.parse(text);
+          errorMessage = typeof error?.message === 'string' ? error.message : errorMessage;
+        } catch {
+          errorMessage = text.trim().slice(0, 200) || errorMessage;
+        }
+      }
     } catch {
-      // Response is not JSON (e.g., HTML error page or empty body)
+      // Response body unreadable
     }
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text.trim()) {
+    return {} as T;
+  }
+
+  return JSON.parse(text) as T;
 }
 
 export interface BlogPost {

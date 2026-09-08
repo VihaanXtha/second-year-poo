@@ -26,11 +26,6 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      await verifyEmailOtp(email, code);
-      // After verifying OTP, we need to actually reset the password via backend
-      // The verifyEmailOtp just verifies the OTP, we need a separate reset endpoint
-      // For now, let's just verify and show success, then redirect to login
-      // Actually we need to call the reset-password endpoint
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
       const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
