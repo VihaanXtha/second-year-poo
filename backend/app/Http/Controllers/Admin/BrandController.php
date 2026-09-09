@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
+use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 
 class BrandController extends Controller
@@ -56,5 +57,21 @@ class BrandController extends Controller
         $brand->delete();
 
         return response()->json(['message' => 'Brand deleted.']);
+    }
+
+    public function uploadLogo(Request $request)
+    {
+        $request->validate([
+            'logo' => ['required', 'file', 'mimes:svg,png,jpg,jpeg,webp,gif', 'max:5120'],
+        ]);
+
+        $cloudinary = new CloudinaryService;
+        $url = $cloudinary->upload($request->file('logo'), 'circuit-bazaar/brands');
+
+        if (! $url) {
+            return response()->json(['message' => 'Upload failed.'], 422);
+        }
+
+        return response()->json(['url' => $url]);
     }
 }

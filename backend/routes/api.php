@@ -168,6 +168,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::apiResource('sub-categories', SubCategoryController::class);
     Route::apiResource('super-sub-categories', SuperSubCategoryController::class);
     Route::apiResource('brands', BrandController::class);
+    Route::post('/brands/{brand}/upload-logo', [BrandController::class, 'uploadLogo']);
     Route::apiResource('faqs', FaqController::class);
 });
 

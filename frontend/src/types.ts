@@ -26,7 +26,15 @@ export interface Product {
   description: string;
   inBox: string[];
   slug: string;
+  originalPriceNpr?: number;
+  discountPercent?: number;
+  images?: string[];
+  badges?: string[];
+  tags?: string[];
   isBestSeller?: boolean;
+  isNewArrival?: boolean;
+  hasDeal?: boolean;
+  comingSoonDate?: string;
 }
 
 export interface Vendor {

@@ -1,99 +1,69 @@
-import Link from "next/link";
-import { PRODUCTS } from "@/data/hardwareData";
-import { getCategories } from "@/lib/api";
-import HomepageSlider from "@/components/sections/HomepageSlider";
-import ShopByCategory from "@/components/sections/ShopByCategory";
-import FeaturedProducts from "@/components/sections/FeaturedProducts";
+import Image from "next/image";
 
-const iconMap: Record<string, string> = {
-  "pc-components": "memory",
-  "iot-gear": "developer_board",
-  laptops: "laptop_mac",
-  networking: "router",
-  "cables-connectors": "cable",
-  "tools-equipment": "handyman",
-  "power-supplies": "power",
-  storage: "sd_card",
-};
-
-function PopularProducts() {
-  const popular = PRODUCTS.filter((p) => p.isBestSeller || p.rating >= 4.9).slice(0, 8);
+export default function Home() {
   return (
-    <section className="bg-white py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">Most Seen Products</h2>
-            <p className="mt-2 text-slate-600">Trending hardware across Nepal right now.</p>
-          </div>
-          <Link href="/products" className="hidden sm:inline-flex items-center text-sm font-semibold text-red-700 hover:text-red-800">View all <span className="material-symbols-outlined ml-1 text-[18px]">arrow_forward</span></Link>
+    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+        <Image
+          className="dark:invert h-5 w-[100px]"
+          src="/next.svg"
+          alt="Next.js logo"
+          width={100}
+          height={20}
+          priority
+        />
+        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
+          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
+            To get started, edit the{" "}
+            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
+              page.tsx
+            </code>{" "}
+            file.
+          </h1>
+          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+            Looking for a starting point or more instructions? Head over to{" "}
+            <a
+              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+              className="font-medium text-zinc-950 dark:text-zinc-50"
+            >
+              Templates
+            </a>{" "}
+            or the{" "}
+            <a
+              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+              className="font-medium text-zinc-950 dark:text-zinc-50"
+            >
+              Learning
+            </a>{" "}
+            center.
+          </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {popular.map((product) => (
-            <Link key={product.id} href={`/products/${product.slug}`} className="group block rounded-2xl bg-white ring-1 ring-slate-200 overflow-hidden hover:shadow-xl hover:shadow-slate-200/60 hover:ring-slate-300 transition-all duration-300">
-              <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
-                <img src={product.image} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              <div className="p-5">
-                <span className="text-[11px] font-bold tracking-wider text-red-700 bg-red-50 px-2.5 py-1 rounded-md uppercase">{product.category}</span>
-                <h3 className="mt-3 text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-red-700 transition-colors">{product.name}</h3>
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <span className="text-base font-bold text-slate-900">Rs. {product.priceNpr.toLocaleString()}</span>
-                  <span className="text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-md">{product.stockStatus || "In Stock"}</span>
-                </div>
-              </div>
-            </Link>
-          ))}
+        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+          <a
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
+            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Image
+              className="dark:invert h-[14px] w-4"
+              src="/vercel.svg"
+              alt="Vercel logomark"
+              width={16}
+              height={14}
+            />
+            Deploy Now
+          </a>
+          <a
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
+            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Documentation
+          </a>
         </div>
-      </div>
-    </section>
-  );
-}
-
-function AllProducts() {
-  const all = PRODUCTS.slice(0, 8);
-  return (
-    <section className="bg-slate-50 py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">All Products</h2>
-            <p className="mt-2 text-slate-600">Browse our full catalog of verified hardware.</p>
-          </div>
-          <Link href="/products" className="hidden sm:inline-flex items-center text-sm font-semibold text-red-700 hover:text-red-800">View all <span className="material-symbols-outlined ml-1 text-[18px]">arrow_forward</span></Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {all.map((product) => (
-            <Link key={product.id} href={`/products/${product.slug}`} className="group block rounded-2xl bg-white ring-1 ring-slate-200 overflow-hidden hover:shadow-xl hover:shadow-slate-200/60 hover:ring-slate-300 transition-all duration-300">
-              <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
-                <img src={product.image} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              <div className="p-5">
-                <span className="text-[11px] font-bold tracking-wider text-red-700 bg-red-50 px-2.5 py-1 rounded-md uppercase">{product.category}</span>
-                <h3 className="mt-3 text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-red-700 transition-colors">{product.name}</h3>
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <span className="text-base font-bold text-slate-900">Rs. {product.priceNpr.toLocaleString()}</span>
-                  <span className="text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-md">{product.stockStatus || "In Stock"}</span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <main className="min-h-screen bg-white">
-      <HomepageSlider />
-      <ShopByCategory />
-      <FeaturedProducts />
-      <PopularProducts />
-      <AllProducts />
-    </main>
+      </main>
+    </div>
   );
 }

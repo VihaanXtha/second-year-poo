@@ -1,5 +1,6 @@
 import Navbar from "@/components/sections/Navbar";
 import HomepageSlider from "@/components/sections/HomepageSlider";
+import TrustedBrand from "@/components/sections/TrustedBrand";
 import About from "@/components/sections/About";
 import WhyCircuitBazaar from "@/components/sections/WhyCircuitBazaar";
 import FeaturedProducts from "@/components/sections/FeaturedProducts";
@@ -16,6 +17,7 @@ export default function Home() {
   return (
     <main className="relative">
       <HomepageSlider />
+      <TrustedBrand />
       <About />
       <WhyCircuitBazaar />
       <FeaturedProducts />

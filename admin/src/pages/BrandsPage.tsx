@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { DataTable } from '../components/DataTable';
-import { Tag } from 'lucide-react';
+import { Tag, Upload, X } from 'lucide-react';
 
 interface Brand {
   id: number;
@@ -21,6 +21,8 @@ export function BrandsPage({ apiFetch }: { apiFetch: ApiFetch }) {
   const [saving, setSaving] = useState<number | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', slug: '', logo: '', status: 'active' as Brand['status'] });
+  const [uploading, setUploading] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const load = async () => {
     setLoading(true);
@@ -81,6 +83,24 @@ export function BrandsPage({ apiFetch }: { apiFetch: ApiFetch }) {
     } catch (e) {
       console.error(e);
       alert('Failed to delete');
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('logo', file);
+      const data = await apiFetch('/admin/brands/upload-logo', { method: 'POST', body: formData });
+      setForm({ ...form, logo: data.url });
+    } catch (err) {
+      console.error(err);
+      alert('Logo upload failed');
+    } finally {
+      setUploading(false);
+      setFileInputKey(k => k + 1);
     }
   };
 
@@ -147,7 +167,22 @@ export function BrandsPage({ apiFetch }: { apiFetch: ApiFetch }) {
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Logo URL</label>
-              <input value={form.logo} onChange={(e) => setForm({ ...form, logo: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="https://..." />
+              <div className="flex items-center gap-2">
+                <input value={form.logo} onChange={(e) => setForm({ ...form, logo: e.target.value })} className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="https://..." />
+                <label className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <Upload className="w-3.5 h-3.5" />
+                  {uploading ? 'Uploading...' : 'Upload'}
+                  <input key={fileInputKey} type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
+                </label>
+              </div>
+              {form.logo && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img src={form.logo} alt="preview" className="h-10 w-10 object-contain rounded border border-slate-200 bg-white" />
+                  <button type="button" onClick={() => setForm({ ...form, logo: '' })} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
+                    <X className="w-3 h-3" /> Remove
+                  </button>
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Status</label>

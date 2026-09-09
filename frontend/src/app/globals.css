@@ -451,7 +451,21 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 .animate-shimmer3d {
-  background: linear-gradient(90deg, transparent 0%, rgba(220,38,38,0.12) 50%, transparent 100%);
-  background-size: 200% 100%;
-  animation: shimmer3d 2.5s ease-in-out infinite;
-}
+    background: linear-gradient(90deg, transparent 0%, rgba(220,38,38,0.12) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer3d 2.5s ease-in-out infinite;
+  }
+
+  .section-curve-bottom {
+    clip-path: ellipse(150% 100% at 50% 0%);
+  }
+
+  .backdrop-blur-extra {
+    backdrop-filter: blur(34px);
+    -webkit-backdrop-filter: blur(34px);
+  }
+
+  .backdrop-blur-nav {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }

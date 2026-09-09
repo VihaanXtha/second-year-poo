@@ -36,7 +36,7 @@ class CloudinaryService
             $result = $this->client->uploadApi()->upload($file->getRealPath(), [
                 'folder' => $folder,
                 'resource_type' => 'image',
-                'allowed_formats' => ['jpg', 'jpeg', 'png', 'webp'],
+                'allowed_formats' => ['jpg', 'jpeg', 'png', 'webp', 'svg'],
             ]);
 
             return $result['secure_url'] ?? null;

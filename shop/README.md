@@ -1,87 +1,36 @@
-# Circuit Bazaar Shop
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Public shop frontend built with Next.js 15, React 19, and Tailwind CSS v4.
+## Getting Started
 
-## Tech Stack
-
-- **Framework:** Next.js 15 (App Router)
-- **UI:** React 19, Tailwind CSS v4
-- **Icons:** Material Symbols Outlined, Lucide React
-- **Package Manager:** npm
-
-## Local Development
+First, run the development server:
 
 ```bash
-# Install dependencies
-npm install
-
-# Run development server on port 3003
 npm run dev
-
-# Open http://localhost:3003
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-## Environment Variables
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-Create a `.env` file in the root:
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
-NEXT_PUBLIC_SHOP_URL=http://localhost:3003
-```
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Build
+## Learn More
 
-```bash
-# Create production build
-npm run build
+To learn more about Next.js, take a look at the following resources:
 
-# Start production server
-npm run start
-```
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Deployment
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-This app is configured for deployment on **Vercel**.
+## Deploy on Vercel
 
-The `vercel.json` in the root configures:
-- Build command: `npm run build`
-- Output directory: `.next`
-- Framework: Next.js
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-## API Integration
-
-All API calls use `NEXT_PUBLIC_API_URL` environment variable. In local development, this points to `http://localhost:8000/api`.
-
-## Project Structure
-
-```
-shop/
-├── src/
-│   ├── app/             # Next.js App Router
-│   │   ├── layout.tsx   # Root layout with AuthProvider
-│   │   ├── page.tsx     # Homepage
-│   │   ├── account/     # User account pages
-│   │   └── auth/        # Auth callback pages
-│   ├── components/      # React components
-│   ├── context/         # Auth context
-│   ├── lib/             # API client
-│   └── types.ts         # TypeScript interfaces
-├── public/              # Static assets
-├── package.json
-├── next.config.mjs
-├── tailwind.config.cjs
-└── .env
-```
-
-## Authentication
-
-- Uses localStorage for auth persistence
-- Token key: `shop-token`
-- User key: `shop-auth`
-- Handles Google OAuth callback with token in URL query params
-- Cross-app auth from frontend via URL token pattern
-
-## Documentation
-
-- `FLOW_OF_SHOP.md` — Detailed shop app flow and pages
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

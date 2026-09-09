@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 const TOKEN_KEY = 'circuit-bazaar-token';
 
@@ -21,7 +21,7 @@ function buildHeaders(init?: RequestInit): HeadersInit {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...(init && (init.headers as Record<string, string>)),
+    ...(init?.headers as Record<string, string>),
   };
   const token = getToken();
   if (token) {
@@ -49,18 +49,6 @@ export async function apiClient<T = unknown>(path: string, init?: RequestInit): 
   }
 
   return response.json() as T;
-}
-
-export async function getCategories() {
-  return apiClient<{ categories: any[] }>('/categories');
-}
-
-export async function getBrands() {
-  return apiClient<{ brands: any[] }>('/brands');
-}
-
-export async function getFaqs() {
-  return apiClient<{ faqs: any[] }>('/faqs');
 }
 
 export interface ApiResponse<T = unknown> {
