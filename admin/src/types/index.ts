@@ -67,6 +67,7 @@ export interface Product {
   price: number;
   stock: number;
   status: string;
+  featured?: boolean;
   vendor_store: { store_name: string };
   category: { name: string };
   created_at: string;

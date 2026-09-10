@@ -9,7 +9,7 @@ class HomepageSlider extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'subtitle', 'image_url', 'button_text', 'button_link', 'display_order', 'is_active'];
+    protected $fillable = ['title', 'subtitle', 'image_url', 'headline', 'link_url', 'sort_order', 'is_active'];
 
     protected $casts = [
         'is_active' => 'boolean',

@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             JobPostingSeeder::class,
             TestimonialSeeder::class,
             CatalogSeeder::class,
+            ShopSeeder::class,
         ]);
 
         $categories = [

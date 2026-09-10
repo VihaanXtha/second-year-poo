@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class VendorStore extends Model
 {
@@ -39,8 +40,8 @@ class VendorStore extends Model
         return $this->hasMany(Product::class);
     }
 
-    public function orders(): HasMany
+    public function orderItems(): HasManyThrough
     {
-        return $this->hasMany(Order::class);
+        return $this->hasManyThrough(OrderItem::class, Product::class, 'vendor_store_id', 'product_id', 'id', 'id');
     }
 }

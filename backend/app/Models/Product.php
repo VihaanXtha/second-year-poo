@@ -11,10 +11,11 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['vendor_store_id', 'category_id', 'name', 'sku', 'description', 'price', 'stock', 'image', 'specs', 'status'];
+    protected $fillable = ['vendor_store_id', 'category_id', 'name', 'sku', 'description', 'price', 'stock', 'image', 'specs', 'status', 'featured'];
 
     protected $casts = [
         'specs' => 'array',
+        'featured' => 'boolean',
     ];
 
     public function vendorStore(): BelongsTo

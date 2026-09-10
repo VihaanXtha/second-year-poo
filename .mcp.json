@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "graft": {
+      "command": "C:\\Users\\sthau\\.agent-tools\\node22\\node.exe",
+      "args": [
+        "C:\\Users\\sthau\\AppData\\Roaming\\npm\\node_modules\\@nanonets\\graft\\dist\\cli.js",
+        "mcp"
+      ]
+    }
+  }
+}

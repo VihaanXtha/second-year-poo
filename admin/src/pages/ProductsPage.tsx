@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Trash2, X } from 'lucide-react';
+import { Search, Eye, Trash2, Star, X } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
 import { Product } from '../types';
@@ -42,6 +42,15 @@ export const ProductsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => 
     try {
       await apiFetch(`/admin/products/${id}`, { method: 'DELETE' });
       setProducts(prev => prev.filter(p => p.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleToggleFeatured = async (product: Product) => {
+    try {
+      const res = await apiFetch(`/admin/products/${product.id}/featured`, { method: 'PATCH' });
+      setProducts(prev => prev.map(p => p.id === product.id ? { ...p, featured: res.featured } : p));
     } catch (e) {
       console.error(e);
     }
@@ -101,6 +110,19 @@ export const ProductsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => 
             }`}>
               {item.status}
             </span>
+          )},
+          { key: 'featured', header: 'Featured', render: (item: Product) => (
+            <button
+              onClick={() => handleToggleFeatured(item)}
+              title={item.featured ? 'Remove from homepage featured' : 'Show in homepage featured'}
+              className={`p-1.5 rounded-lg transition-colors ${
+                item.featured
+                  ? 'text-amber-500 hover:text-amber-600 bg-amber-50'
+                  : 'text-slate-300 hover:text-amber-500 hover:bg-amber-50'
+              }`}
+            >
+              <Star className="w-4 h-4" fill={item.featured ? 'currentColor' : 'none'} />
+            </button>
           )},
           { key: 'actions', header: 'Actions', className: 'text-right', render: (item: Product) => (
             <div className="flex items-center justify-end gap-1">

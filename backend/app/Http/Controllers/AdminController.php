@@ -108,9 +108,13 @@ class AdminController extends Controller
     public function vendors(Request $request)
     {
         $query = VendorStore::query()
-            ->where('verified', true)
-            ->orWhere('status', 'active')
-            ->with('user');
+            ->where(function ($q) {
+                $q->where('verified', true)
+                    ->orWhere('status', 'active');
+            })
+            ->with('user')
+            ->withCount('products')
+            ->withSum('orderItems', 'subtotal');
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -135,8 +139,8 @@ class AdminController extends Controller
                 'status' => $store->status,
                 'created_at' => $store->user->created_at,
                 'store_name' => $store->store_name,
-                'products_count' => 0,
-                'total_sales' => 0,
+                'products_count' => $store->products_count,
+                'total_sales' => (float) ($store->order_items_sum_subtotal ?? 0),
                 'description' => $store->description,
                 'address' => $store->address,
                 'phone' => $store->phone,
@@ -304,8 +308,10 @@ class AdminController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhere('sku', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
+            });
         }
 
         if ($request->has('category')) {
@@ -319,6 +325,13 @@ class AdminController extends Controller
         $products = $query->latest()->paginate(20);
 
         return response()->json($products);
+    }
+
+    public function toggleFeatured(Product $product)
+    {
+        $product->update(['featured' => ! $product->featured]);
+
+        return response()->json(['message' => 'Featured flag updated.', 'featured' => $product->featured]);
     }
 
     public function deleteProduct(Product $product)
@@ -338,10 +351,12 @@ class AdminController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where('order_number', 'like', "%{$search}%")
-                ->orWhereHas('user', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
-                });
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%");
+                    });
+            });
         }
 
         $orders = $query->latest()->paginate(20);

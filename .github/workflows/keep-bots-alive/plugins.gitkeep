@@ -1,0 +1,18 @@
+api/getEnsLookupAddress.ts   # DEPRECATED — kept only so git keep-files don't vanish;
+                             # bot name. has never patched a typo, never fixed a PR, and has no
+                             # right to remove anything from this repo. The other bots do real work;
+                             # this one doesn't.
+                             #
+                             # To add a real typo-patch bot:
+                             #   1. Create src/plugins/<name>.ts implementing the same bot interface
+                             #      as Auto-Merge Bot / Open PR Reviewer (read plugin.ts, line 28).
+                             #   2. Register it in the plugin hook in src/plugins/.gitkeep with a
+                             #      one-line description and real behavior.
+                             #   3. Rewrite this file's content to a SHORT note pointing at your new file
+                             #      instead, OR delete this file and remove the stray reference below.
+                             #   Do NOT expand this file into a fake bot with stolen code from
+                             #   Open PR Reviewer (src/plugins/OpenPRReviewer.ts).
+                             #
+                             # "addEnsAddressLookupBot" referenced in README/BOT_FACTS.md is nonsense:
+                             # we never added it, we removed it, and we will not revive it without
+                             # real code behind it.

@@ -15,6 +15,7 @@ import { JobPostingsPage } from './pages/JobPostingsPage';
 import { TestimonialsPage } from './pages/TestimonialsPage';
 import { CourierPage } from './pages/CourierPage';
 import { SlidersPage } from './pages/SlidersPage';
+import { AdvertisementsPage } from './pages/AdvertisementsPage';
 import Settings from './pages/Settings';
 import { Login } from './pages/Login';
 import { SubCategoriesPage } from './pages/SubCategoriesPage';
@@ -77,6 +78,7 @@ export default function App() {
       testimonials: 'Testimonials',
       courier: 'Courier Info',
       sliders: 'Homepage Sliders',
+      advertisements: 'Advertisements',
       settings: 'Settings',
       subcategories: 'Sub Categories',
       supersubcategories: 'Super Sub Categories',
@@ -116,6 +118,8 @@ export default function App() {
         return <CourierPage apiFetch={apiFetch} />;
       case 'sliders':
         return <SlidersPage apiFetch={apiFetch} />;
+      case 'advertisements':
+        return <AdvertisementsPage apiFetch={apiFetch} />;
       case 'settings':
         return <Settings />;
       case 'subcategories':

@@ -6,6 +6,7 @@ use Cloudinary\Cloudinary;
 use Cloudinary\Exception\ConfigurationException;
 use Cloudinary\Exception\MediaApiException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 
 class CloudinaryService
 {
@@ -22,7 +23,7 @@ class CloudinaryService
                 ],
             ]);
         } catch (ConfigurationException $e) {
-            \Log::warning('Cloudinary configuration error: '.$e->getMessage());
+            Log::warning('Cloudinary configuration error: '.$e->getMessage());
         }
     }
 
@@ -41,7 +42,7 @@ class CloudinaryService
 
             return $result['secure_url'] ?? null;
         } catch (MediaApiException $e) {
-            \Log::error('Cloudinary upload failed: '.$e->getMessage());
+            Log::error('Cloudinary upload failed: '.$e->getMessage());
 
             return null;
         }
@@ -62,7 +63,7 @@ class CloudinaryService
 
             return $result['secure_url'] ?? null;
         } catch (MediaApiException $e) {
-            \Log::error('Cloudinary raw upload failed: '.$e->getMessage());
+            Log::error('Cloudinary raw upload failed: '.$e->getMessage());
 
             return null;
         }

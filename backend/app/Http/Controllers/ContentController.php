@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Advertisement;
 use App\Models\BlogPost;
 use App\Models\CareerPost;
+use App\Models\Category;
 use App\Models\CourierInfo;
 use App\Models\HomepageSlider;
+use App\Models\NewsletterSubscriber;
+use App\Models\Product;
+use App\Models\SubCategory;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -296,6 +301,114 @@ class ContentController extends Controller
         return response()->json(['message' => 'Slider deleted.']);
     }
 
+    // =====================
+    // ADVERTISEMENTS
+    // =====================
+
+    public function activeAdvertisements()
+    {
+        $ads = Advertisement::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Advertisement $ad) => $this->presentAdvertisement($ad))
+            ->values();
+
+        return response()->json(['advertisements' => $ads]);
+    }
+
+    public function advertisementsIndex()
+    {
+        $this->authorizeAdmin();
+
+        $ads = Advertisement::orderBy('sort_order')->orderBy('id')
+            ->get()
+            ->map(fn (Advertisement $ad) => $this->presentAdvertisement($ad));
+
+        return response()->json(['advertisements' => $ads]);
+    }
+
+    public function advertisementStore(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $validated = $request->validate([
+            'title' => ['nullable', 'string', 'max:255'],
+            'image' => ['required', 'string', 'max:500'],
+            'link_type' => ['required', 'in:product,category,subcategory,external_url'],
+            'link_target_id' => ['nullable', 'integer', 'min:1'],
+            'external_url' => ['nullable', 'string', 'max:500'],
+            'sort_order' => ['integer', 'min:0'],
+            'is_active' => ['boolean'],
+        ]);
+
+        $ad = Advertisement::create($validated);
+
+        return response()->json(['message' => 'Advertisement created.', 'advertisement' => $this->presentAdvertisement($ad)], 201);
+    }
+
+    public function advertisementUpdate(Request $request, $id)
+    {
+        $this->authorizeAdmin();
+
+        $ad = Advertisement::findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => ['nullable', 'string', 'max:255'],
+            'image' => ['required', 'string', 'max:500'],
+            'link_type' => ['required', 'in:product,category,subcategory,external_url'],
+            'link_target_id' => ['nullable', 'integer', 'min:1'],
+            'external_url' => ['nullable', 'string', 'max:500'],
+            'sort_order' => ['integer', 'min:0'],
+            'is_active' => ['boolean'],
+        ]);
+
+        $ad->update($validated);
+
+        return response()->json(['message' => 'Advertisement updated.', 'advertisement' => $this->presentAdvertisement($ad)]);
+    }
+
+    public function advertisementDestroy($id)
+    {
+        $this->authorizeAdmin();
+
+        $ad = Advertisement::findOrFail($id);
+        $ad->delete();
+
+        return response()->json(['message' => 'Advertisement deleted.']);
+    }
+
+    // Resolves a linked taxonomy/product target into the shop's route so the
+    // storefront never has to guess how link_type maps to a URL.
+    private function presentAdvertisement(Advertisement $ad): array
+    {
+        $data = $ad->only(['id', 'title', 'image', 'link_type', 'link_target_id', 'external_url', 'sort_order', 'is_active']);
+        $data['link_url'] = null;
+        $data['link_label'] = null;
+
+        if ($ad->link_type === 'external_url') {
+            $data['link_url'] = $ad->external_url;
+        } elseif ($ad->link_target_id) {
+            $target = match ($ad->link_type) {
+                'product' => Product::find($ad->link_target_id),
+                'category' => Category::find($ad->link_target_id),
+                'subcategory' => SubCategory::find($ad->link_target_id),
+                default => null,
+            };
+
+            if ($target) {
+                $data['link_label'] = $target->name;
+                $data['link_url'] = match ($ad->link_type) {
+                    'product' => "/product/{$target->id}",
+                    'category' => "/category/{$target->slug}",
+                    'subcategory' => '/subcategory/' . $target->slug,
+                };
+            }
+        }
+
+        return $data;
+    }
+
     public function uploadImage(Request $request)
     {
         $this->authorizeAdmin();
@@ -312,6 +425,27 @@ class ContentController extends Controller
         }
 
         return response()->json(['url' => $url]);
+    }
+
+    public function courierDestroy($id)
+    {
+        $this->authorizeAdmin();
+
+        $info = CourierInfo::findOrFail($id);
+        $info->delete();
+
+        return response()->json(['message' => 'Courier info deleted.']);
+    }
+
+    public function newsletterSubscribe(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+
+        NewsletterSubscriber::firstOrCreate(['email' => $validated['email']]);
+
+        return response()->json(['message' => 'Subscribed successfully.'], 201);
     }
 
     private function authorizeAdmin(): void

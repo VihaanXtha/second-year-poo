@@ -13,6 +13,10 @@ class ProductController extends Controller
     {
         $query = Product::where('status', 'active')->with(['vendorStore', 'category', 'reviews']);
 
+        if ($request->boolean('featured')) {
+            $query->where('featured', true);
+        }
+
         if ($request->has('category')) {
             $query->where('category_id', $request->category);
         }
@@ -77,7 +81,7 @@ class ProductController extends Controller
     {
         $categories = Category::with(['subCategories' => function ($q) {
             $q->with(['superSubCategories']);
-        }])->orderBy('display_order')->orderByDesc('id')->get(['id', 'name', 'slug', 'description', 'image', 'display_order', 'is_active']);
+        }])->orderBy('display_order')->orderByDesc('id')->get(['id', 'name', 'slug', 'description', 'image', 'icon', 'display_order', 'is_active']);
 
         return response()->json(['categories' => $categories]);
     }

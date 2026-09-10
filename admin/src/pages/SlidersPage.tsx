@@ -23,7 +23,7 @@ export function SlidersPage({ apiFetch }: { apiFetch: ApiFetch }) {
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<HomepageSlider | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ image_url: '', headline: '', link_url: '', sort_order: 0, is_active: true });
+  const [form, setForm] = useState<{ image_url: string; headline: string; link_url?: string; sort_order: number; is_active: boolean }>({ image_url: '', headline: '', link_url: '', sort_order: 0, is_active: true });
 
   const load = async () => {
     setLoading(true);

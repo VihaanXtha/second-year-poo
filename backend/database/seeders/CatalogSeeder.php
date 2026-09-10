@@ -18,14 +18,14 @@ class CatalogSeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            ['name' => 'PC Components', 'slug' => 'pc-components', 'description' => 'Processors, graphics cards, memory, and storage for custom builds.', 'image' => 'https://placehold.co/600x400/1e293b/FFFFFF?text=PC+Components', 'display_order' => 1],
-            ['name' => 'IoT Gear', 'slug' => 'iot-gear', 'description' => 'Microcontrollers, sensors, and modules for connected projects.', 'image' => 'https://placehold.co/600x400/0f766e/FFFFFF?text=IoT+Gear', 'display_order' => 2],
-            ['name' => 'Laptops', 'slug' => 'laptops', 'description' => 'Work, gaming, and student laptops from trusted brands.', 'image' => 'https://placehold.co/600x400/7c3aed/FFFFFF?text=Laptops', 'display_order' => 3],
-            ['name' => 'Networking', 'slug' => 'networking', 'description' => 'Routers, switches, access points, and cabling.', 'image' => 'https://placehold.co/600x400/059669/FFFFFF?text=Networking', 'display_order' => 4],
-            ['name' => 'Cables & Connectors', 'slug' => 'cables-connectors', 'description' => 'USB, HDMI, Ethernet, and power cables.', 'image' => 'https://placehold.co/600x400/d97706/FFFFFF?text=Cables+%26+Connectors', 'display_order' => 5],
-            ['name' => 'Tools & Equipment', 'slug' => 'tools-equipment', 'description' => 'Soldering irons, multimeters, and workbench essentials.', 'image' => 'https://placehold.co/600x400/b91c1c/FFFFFF?text=Tools+%26+Equipment', 'display_order' => 6],
-            ['name' => 'Power Supplies', 'slug' => 'power-supplies', 'description' => 'ATX, UPS, and DC power modules.', 'image' => 'https://placehold.co/600x400/4338ca/FFFFFF?text=Power+Supplies', 'display_order' => 7],
-            ['name' => 'Storage', 'slug' => 'storage', 'description' => 'SSDs, HDDs, and memory cards.', 'image' => 'https://placehold.co/600x400/be185d/FFFFFF?text=Storage', 'display_order' => 8],
+            ['name' => 'PC Components', 'slug' => 'pc-components', 'description' => 'Processors, graphics cards, memory, and storage for custom builds.', 'image' => 'https://placehold.co/600x400/1e293b/FFFFFF?text=PC+Components', 'icon' => 'memory', 'display_order' => 1],
+            ['name' => 'IoT Gear', 'slug' => 'iot-gear', 'description' => 'Microcontrollers, sensors, and modules for connected projects.', 'image' => 'https://placehold.co/600x400/0f766e/FFFFFF?text=IoT+Gear', 'icon' => 'sensors', 'display_order' => 2],
+            ['name' => 'Laptops', 'slug' => 'laptops', 'description' => 'Work, gaming, and student laptops from trusted brands.', 'image' => 'https://placehold.co/600x400/7c3aed/FFFFFF?text=Laptops', 'icon' => 'laptop_mac', 'display_order' => 3],
+            ['name' => 'Networking', 'slug' => 'networking', 'description' => 'Routers, switches, access points, and cabling.', 'image' => 'https://placehold.co/600x400/059669/FFFFFF?text=Networking', 'icon' => 'router', 'display_order' => 4],
+            ['name' => 'Cables & Connectors', 'slug' => 'cables-connectors', 'description' => 'USB, HDMI, Ethernet, and power cables.', 'image' => 'https://placehold.co/600x400/d97706/FFFFFF?text=Cables+%26+Connectors', 'icon' => 'cable', 'display_order' => 5],
+            ['name' => 'Tools & Equipment', 'slug' => 'tools-equipment', 'description' => 'Soldering irons, multimeters, and workbench essentials.', 'image' => 'https://placehold.co/600x400/b91c1c/FFFFFF?text=Tools+%26+Equipment', 'icon' => 'hardware', 'display_order' => 6],
+            ['name' => 'Power Supplies', 'slug' => 'power-supplies', 'description' => 'ATX, UPS, and DC power modules.', 'image' => 'https://placehold.co/600x400/4338ca/FFFFFF?text=Power+Supplies', 'icon' => 'power', 'display_order' => 7],
+            ['name' => 'Storage', 'slug' => 'storage', 'description' => 'SSDs, HDDs, and memory cards.', 'image' => 'https://placehold.co/600x400/be185d/FFFFFF?text=Storage', 'icon' => 'storage', 'display_order' => 8],
         ];
 
         foreach ($categories as $categoryData) {

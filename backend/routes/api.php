@@ -3,7 +3,6 @@
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\FaqController;
-use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\SuperSubCategoryController;
 use App\Http\Controllers\Admin\SubCategoryController;
 use App\Http\Controllers\AdminController;
@@ -23,6 +22,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/health', function () {
     return response()->json(['status' => 'ok', 'service' => 'circuit-bazaar-api', 'time' => now()->toIso8601String()]);
 });
+
+Route::post('/newsletter/subscribe', [ContentController::class, 'newsletterSubscribe'])->middleware('throttle:5,1');
 
 Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
@@ -86,6 +87,7 @@ Route::get('/careers', [ContentController::class, 'careerIndex']);
 Route::get('/careers/{id}', [ContentController::class, 'careerShow']);
 Route::get('/courier', [ContentController::class, 'courierShow']);
 Route::get('/sliders', [ContentController::class, 'activeSliders']);
+Route::get('/advertisements', [ContentController::class, 'activeAdvertisements']);
 
 // Public job postings
 Route::get('/job-postings', [JobPostingController::class, 'index']);
@@ -100,7 +102,7 @@ Route::get('/testimonials/{id}', [TestimonialController::class, 'show']);
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin/content')->group(function () {
     // Blog
     Route::get('/blog', [ContentController::class, 'blogIndex']);
-    Route::get('/blog/{slug}', [ContentController::class, 'blogShowBySlug']);
+    Route::get('/blog/slug/{slug}', [ContentController::class, 'blogShowBySlug']);
     Route::post('/blog', [ContentController::class, 'blogStore']);
     Route::get('/blog/{id}', [ContentController::class, 'blogShow']);
     Route::put('/blog/{id}', [ContentController::class, 'blogUpdate']);
@@ -118,12 +120,19 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin/content')->grou
     Route::get('/courier', [ContentController::class, 'courierShow']);
     Route::post('/courier', [ContentController::class, 'courierStore']);
     Route::put('/courier/{id}', [ContentController::class, 'courierUpdate']);
+    Route::delete('/courier/{id}', [ContentController::class, 'courierDestroy']);
 
     // Sliders
     Route::get('/sliders', [ContentController::class, 'slidersIndex']);
     Route::post('/sliders', [ContentController::class, 'sliderStore']);
     Route::put('/sliders/{id}', [ContentController::class, 'sliderUpdate']);
     Route::delete('/sliders/{id}', [ContentController::class, 'sliderDestroy']);
+
+    // Advertisements
+    Route::get('/advertisements', [ContentController::class, 'advertisementsIndex']);
+    Route::post('/advertisements', [ContentController::class, 'advertisementStore']);
+    Route::put('/advertisements/{id}', [ContentController::class, 'advertisementUpdate']);
+    Route::delete('/advertisements/{id}', [ContentController::class, 'advertisementDestroy']);
 });
 
 // Admin job postings
@@ -158,6 +167,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::post('/vendor-applications/{vendorApplication}/approve', [AdminController::class, 'approveVendor']);
     Route::post('/vendor-applications/{vendorApplication}/reject', [AdminController::class, 'rejectVendor']);
     Route::get('/products', [AdminController::class, 'products']);
+    Route::patch('/products/{product}/featured', [AdminController::class, 'toggleFeatured']);
     Route::delete('/products/{product}', [AdminController::class, 'deleteProduct']);
     Route::get('/orders', [AdminController::class, 'orders']);
     Route::patch('/orders/{order}/status', [AdminController::class, 'updateOrderStatus']);

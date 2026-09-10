@@ -98,7 +98,7 @@ export const Analytics: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
                 outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                 labelLine={{ stroke: '#94a3b8' }}
               >
                 {pieData.map((entry, index) => (

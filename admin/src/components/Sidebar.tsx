@@ -69,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeNav, setActiveNav, colla
 
   const cmsTabs = [
     { id: 'sliders', label: 'Homepage Sliders', icon: Image },
+    { id: 'advertisements', label: 'Advertisements', icon: Tag },
     { id: 'blog', label: 'Blog Posts', icon: BlogIcon },
     { id: 'careers', label: 'Job Postings', icon: Briefcase },
     { id: 'testimonials', label: 'Testimonials', icon: Star },
