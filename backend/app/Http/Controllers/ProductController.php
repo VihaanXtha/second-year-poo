@@ -21,6 +21,18 @@ class ProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
+        if ($request->has('sub_category')) {
+            $query->where('sub_category_id', $request->sub_category);
+        }
+
+        if ($request->has('super_sub_category')) {
+            $query->where('super_sub_category_id', $request->super_sub_category);
+        }
+
+        if ($request->has('brand')) {
+            $query->where('brand_id', $request->brand);
+        }
+
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {

@@ -28,6 +28,21 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function subCategory(): BelongsTo
+    {
+        return $this->belongsTo(SubCategory::class);
+    }
+
+    public function superSubCategory(): BelongsTo
+    {
+        return $this->belongsTo(SuperSubCategory::class);
+    }
+
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class);
+    }
+
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);

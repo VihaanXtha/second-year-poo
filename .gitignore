@@ -65,3 +65,13 @@ phpunit-result.xml
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
+
+# Local dev artifacts — machine-specific, never commit
+.claude/
+.clinerules/
+.mcp.json
+.shopdev.*
+*.err
+
+# Bot automation scaffolding (unrelated to Circuit Bazaar)
+.github/workflows/keep-bots-alive/
