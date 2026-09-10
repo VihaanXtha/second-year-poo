@@ -62,7 +62,7 @@ class BrandController extends Controller
     public function uploadLogo(Request $request)
     {
         $request->validate([
-            'logo' => ['required', 'file', 'mimes:svg,png,jpg,jpeg,webp,gif', 'max:5120'],
+            'logo' => ['required', 'file', 'mimes:svg', 'max:5120'],
         ]);
 
         $cloudinary = new CloudinaryService;

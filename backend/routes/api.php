@@ -100,7 +100,7 @@ Route::get('/testimonials/{id}', [TestimonialController::class, 'show']);
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin/content')->group(function () {
     // Blog
     Route::get('/blog', [ContentController::class, 'blogIndex']);
-    Route::get('/blog/slug/{slug}', [ContentController::class, 'blogShowBySlug']);
+    Route::get('/blog/{slug}', [ContentController::class, 'blogShowBySlug']);
     Route::post('/blog', [ContentController::class, 'blogStore']);
     Route::get('/blog/{id}', [ContentController::class, 'blogShow']);
     Route::put('/blog/{id}', [ContentController::class, 'blogUpdate']);
