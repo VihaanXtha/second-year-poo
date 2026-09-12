@@ -1,0 +1,32 @@
+{
+  "provinces": [
+    {
+      "name": "Koshi",
+      "districts": ["Bhojpur", "Dhankuta", "Ilam", "Jhapa", "Khotang", "Morang", "Okhaldhunga", "Sankhuwasabha", "Solukhumbu", "Sunsari", "Taplejung", "Terhathum", "Udayapur"]
+    },
+    {
+      "name": "Madhesh",
+      "districts": ["Bara", "Dhanusha", "Mahottari", "Parsa", "Rautahat", "Saptari", "Sarlahi", "Siraha"]
+    },
+    {
+      "name": "Bagmati",
+      "districts": ["Bhaktapur", "Chitwan", "Dhading", "Dolakha", "Kathmandu", "Kavrepalanchok", "Lalitpur", "Makwanpur", "Nuwakot", "Ramechhap", "Rasuwa", "Sindhuli", "Sindhupalchowk"]
+    },
+    {
+      "name": "Gandaki",
+      "districts": ["Baglung", "Gorkha", "Kaski", "Lamjung", "Manang", "Mustang", "Myagdi", "Nawalpur", "Parbat", "Syangja", "Tanahun"]
+    },
+    {
+      "name": "Lumbini",
+      "districts": ["Arghakhanchi", "Banke", "Bardiya", "Dang", "Eastern Rukum", "Gulmi", "Kapilvastu", "Palpa", "Pyuthan", "Rolpa", "Rupandehi"]
+    },
+    {
+      "name": "Karnali",
+      "districts": ["Achham", "Baitadi", "Bajhang", "Bajura", "Dadeldhura", "Darchula", "Doti", "Jajarkot", "Jumla", "Kalikot", "Mugu", "Salyan", "Surkhet"]
+    },
+    {
+      "name": "Sudurpashchim",
+      "districts": ["Kailali", "Kanchanpur"]
+    }
+  ]
+}

@@ -1,4 +1,6 @@
 *.log
+test_output.txt
+.phpunit.result.cache
 .DS_Store
 .env
 .env.backup
