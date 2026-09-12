@@ -1,42 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
 import { Search, Heart, ShoppingCart } from "lucide-react";
-import { CART_KEY, WISHLIST_KEY } from "@/lib/api";
+import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import TopBar from "@/components/TopBar";
 import UserMenu from "@/components/UserMenu";
 import BrandsMenu from "@/components/BrandsMenu";
 import CategoryBar from "@/components/CategoryBar";
 
-// Cart/wishlist live in localStorage until the backend cart arrives (later prompt).
-function useStoredCount(key: string) {
-  const read = useCallback(() => {
-    try {
-      const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
-      if (!Array.isArray(parsed)) return 0;
-      return parsed.reduce((n: number, item) => n + (Number((item as { quantity?: number })?.quantity) || 1), 0);
-    } catch {
-      return 0;
-    }
-  }, [key]);
-
-  const [count, setCount] = useState(() => read());
-  useEffect(() => {
-    const update = () => setCount(read());
-    window.addEventListener("storage", update);
-    window.addEventListener(`${key}-changed`, update);
-    return () => {
-      window.removeEventListener("storage", update);
-      window.removeEventListener(`${key}-changed`, update);
-    };
-  }, [read, key]);
-  return count;
-}
-
 export default function Header() {
-  const cartCount = useStoredCount(CART_KEY);
-  const wishlistCount = useStoredCount(WISHLIST_KEY);
+  // Counts come from the contexts, which read the backend for logged-in users
+  // and fall back to localStorage for guests — so the badge is always correct
+  // regardless of auth state.
+  const { count: cartCount } = useCart();
+  const { count: wishlistCount } = useWishlist();
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm">

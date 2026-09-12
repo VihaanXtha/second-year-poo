@@ -1,7 +1,7 @@
-import ComingSoon from "@/components/ComingSoon";
+import AccountClient from "./AccountClient";
 
 export const metadata = { title: "My Account" };
 
 export default function AccountPage() {
-  return <ComingSoon title="My Account" kicker="Account" />;
+  return <AccountClient />;
 }

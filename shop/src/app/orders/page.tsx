@@ -1,7 +1,7 @@
-import ComingSoon from "@/components/ComingSoon";
+import OrdersClient from "./OrdersClient";
 
-export const metadata = { title: "Orders" };
+export const metadata = { title: "My Orders" };
 
 export default function OrdersPage() {
-  return <ComingSoon title="My Orders" kicker="Order history" />;
+  return <OrdersClient />;
 }

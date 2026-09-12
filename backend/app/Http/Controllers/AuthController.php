@@ -29,6 +29,10 @@ class AuthController extends Controller
             'channel' => ['required', 'in:email,phone'],
             'address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
+            'province' => ['nullable', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
+            'municipality' => ['nullable', 'string', 'max:100'],
+            'ward' => ['nullable', 'string', 'max:20'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:100'],
         ]);
@@ -62,6 +66,10 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'address' => $request->address,
             'city' => $request->city,
+            'province' => $request->province,
+            'district' => $request->district,
+            'municipality' => $request->municipality,
+            'ward' => $request->ward,
             'postal_code' => $request->postal_code,
             'country' => $request->country,
             'role' => 'customer',
@@ -679,25 +687,30 @@ class AuthController extends Controller
     public function updateProfile(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => ['required', 'email'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
+            'province' => ['nullable', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
+            'municipality' => ['nullable', 'string', 'max:100'],
+            'ward' => ['nullable', 'string', 'max:20'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = $request->user();
 
-        if (! $user) {
-            return response()->json(['message' => 'User not found.'], 404);
-        }
-
-        $user->update($request->only(['address', 'city', 'postal_code', 'country', 'phone']));
+        // Email is used as the account identity and cannot be changed here;
+        // everything else is fair game.
+        $user->update($request->only([
+            'name', 'phone', 'address', 'city', 'province',
+            'district', 'municipality', 'ward', 'postal_code', 'country',
+        ]));
 
         return response()->json([
             'message' => 'Profile updated successfully.',
@@ -705,11 +718,18 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'role' => $user->role,
                 'address' => $user->address,
                 'city' => $user->city,
+                'province' => $user->province,
+                'district' => $user->district,
+                'municipality' => $user->municipality,
+                'ward' => $user->ward,
                 'postal_code' => $user->postal_code,
                 'country' => $user->country,
+                'email_verified' => ! is_null($user->email_verified_at),
+                'phone_verified' => ! is_null($user->phone_verified_at),
             ],
         ]);
     }
@@ -745,7 +765,6 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Password set successfully.']);
     }
-
     public function me(Request $request)
     {
         return response()->json([
@@ -753,15 +772,48 @@ class AuthController extends Controller
                 'id' => $request->user()->id,
                 'name' => $request->user()->name,
                 'email' => $request->user()->email,
+                'phone' => $request->user()->phone,
                 'role' => $request->user()->role,
                 'address' => $request->user()->address,
                 'city' => $request->user()->city,
+                'province' => $request->user()->province,
+                'district' => $request->user()->district,
+                'municipality' => $request->user()->municipality,
+                'ward' => $request->user()->ward,
                 'postal_code' => $request->user()->postal_code,
                 'country' => $request->user()->country,
                 'email_verified' => ! is_null($request->user()->email_verified_at),
                 'phone_verified' => ! is_null($request->user()->phone_verified_at),
             ],
         ]);
+    }
+
+    /**
+     * Change password for an authenticated user. Requires the current password
+     * to confirm identity, then sets the new password.
+     */
+    public function changePassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = $request->user();
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'Current password is incorrect.'], 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json(['message' => 'Password changed successfully.']);
     }
 
     private function generateAndSendOtp(?string $email, ?int $userId, string $type): void

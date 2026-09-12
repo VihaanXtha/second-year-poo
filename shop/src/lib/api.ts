@@ -119,6 +119,19 @@ export interface Product {
   order_count?: number;
 }
 
+/**
+ * The subset of Product fields that cart/wishlist mutations actually need.
+ * Context methods accept this so callers can pass a full Product, a cart line,
+ * or a wishlist item interchangeably without forcing a `stock` field that
+ * derived views don't have.
+ */
+export interface ProductLike {
+  id: number;
+  name: string;
+  price: string | number;
+  image?: string;
+}
+
 export interface Slider {
   id: number;
   title: string;
@@ -160,8 +173,18 @@ export async function getBrands() {
   return apiClient<{ brands: Brand[] }>('/brands');
 }
 
-export async function searchProducts(query: string, page = 1) {
-  const params = new URLSearchParams({ search: query, page: String(page) });
+export interface SearchProductsOptions {
+  page?: number;
+  sort?: "newest" | "popular" | "price_asc" | "price_desc";
+  minPrice?: number | null;
+  maxPrice?: number | null;
+}
+
+export async function searchProducts(query: string, options: SearchProductsOptions = {}) {
+  const params = new URLSearchParams({ search: query, page: String(options.page ?? 1) });
+  if (options.sort) params.set("sort", options.sort);
+  if (options.minPrice != null && options.minPrice !== undefined) params.set("min_price", String(options.minPrice));
+  if (options.maxPrice != null && options.maxPrice !== undefined) params.set("max_price", String(options.maxPrice));
   return apiClient<PaginatedResponse<Product>>(`/products?${params.toString()}`);
 }
 
@@ -190,3 +213,236 @@ export async function getProducts(page = 1, perPage = 24) {
 export function formatPrice(price: string | number): string {
   return `Rs. ${Number(price).toLocaleString('en-IN')}`;
 }
+
+// ---------------------------------------------------------------------------
+// Cart & Wishlist — localStorage shapes (guest mode)
+// ---------------------------------------------------------------------------
+// A guest's cart item mirrors just enough Product data to render a line item
+// without a backend round-trip. `id` is the product id.
+
+export interface LocalCartItem {
+  id: number;
+  name: string;
+  price: string | number;
+  image?: string;
+  quantity: number;
+}
+
+export interface LocalWishlistItem {
+  id: number;
+  name: string;
+  price: string | number;
+  image?: string;
+}
+
+export function getLocalCart(): LocalCartItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(CART_KEY) ?? '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setLocalCart(items: LocalCartItem[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(CART_KEY, JSON.stringify(items));
+}
+
+export function getLocalWishlist(): LocalWishlistItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(WISHLIST_KEY) ?? '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setLocalWishlist(items: LocalWishlistItem[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(WISHLIST_KEY, JSON.stringify(items));
+}
+
+// ---------------------------------------------------------------------------
+// Cart API
+// ---------------------------------------------------------------------------
+
+export interface CartItemResponse {
+  id: number;
+  user_id: number;
+  product_id: number;
+  quantity: number;
+  product: Product;
+}
+
+export async function fetchCart(): Promise<{ cart_items: CartItemResponse[] }> {
+  return apiClient<{ cart_items: CartItemResponse[] }>('/cart');
+}
+
+export async function addToCart(product_id: number, quantity = 1) {
+  return apiClient<{ cart_item: CartItemResponse }>('/cart', {
+    method: 'POST',
+    body: JSON.stringify({ product_id, quantity }),
+  });
+}
+
+export async function updateCartItem(cartItemId: number, quantity: number) {
+  return apiClient<{ cart_item: CartItemResponse }>(`/cart/${cartItemId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ quantity }),
+  });
+}
+
+export async function removeFromCart(cartItemId: number) {
+  return apiClient(`/cart/${cartItemId}`, { method: 'DELETE' });
+}
+
+export async function clearCart() {
+  return apiClient('/cart', { method: 'DELETE' });
+}
+
+/** Push a guest's localStorage cart into the backend cart (additive on conflict). */
+export async function mergeCart(items: { product_id: number; quantity: number }[]) {
+  return apiClient<{ cart_items: CartItemResponse[] }>('/cart/merge', {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Wishlist API
+// ---------------------------------------------------------------------------
+
+export interface WishlistItemResponse {
+  id: number;
+  user_id: number;
+  product_id: number;
+  product: Product;
+}
+
+export async function fetchWishlist(): Promise<{ wishlist_items: WishlistItemResponse[] }> {
+  return apiClient<{ wishlist_items: WishlistItemResponse[] }>('/wishlist');
+}
+
+export async function addToWishlist(product_id: number) {
+  return apiClient<{ wishlist_item: WishlistItemResponse }>('/wishlist', {
+    method: 'POST',
+    body: JSON.stringify({ product_id }),
+  });
+}
+
+export async function toggleWishlist(product_id: number) {
+  return apiClient<{ added: boolean }>('/wishlist/toggle', {
+    method: 'POST',
+    body: JSON.stringify({ product_id }),
+  });
+}
+
+export async function removeFromWishlist(wishlistItemId: number) {
+  return apiClient(`/wishlist/${wishlistItemId}`, { method: 'DELETE' });
+}
+
+/** Push a guest's localStorage wishlist into the backend wishlist. */
+export async function mergeWishlist(items: { product_id: number }[]) {
+  return apiClient<{ wishlist_items: WishlistItemResponse[] }>('/wishlist/merge', {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Auth — profile & password
+// ---------------------------------------------------------------------------
+
+export interface ProfileData {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  address?: string;
+  city?: string;
+  province?: string;
+  district?: string;
+  municipality?: string;
+  ward?: string;
+  postal_code?: string;
+  country?: string;
+  email_verified: boolean;
+  phone_verified: boolean;
+}
+
+export async function fetchProfile(): Promise<ProfileData> {
+  const res = await apiClient<{ user: ProfileData }>('/auth/me');
+  return res.user;
+}
+
+export async function updateProfile(profile: {
+  name?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  province?: string;
+  district?: string;
+  municipality?: string;
+  ward?: string;
+  postal_code?: string;
+  country?: string;
+}): Promise<ProfileData> {
+  const res = await apiClient<{ user: ProfileData }>('/auth/update-profile', {
+    method: 'POST',
+    body: JSON.stringify(profile),
+  });
+  return res.user;
+}
+
+export async function changePassword(current_password: string, password: string, password_confirmation: string) {
+  return apiClient('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ current_password, password, password_confirmation }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+
+export interface OrderItem {
+  id: number;
+  product_id: number;
+  product_name: string;
+  name?: string;
+  product_sku: string;
+  unit_price: string | number;
+  price?: string | number;
+  quantity: number;
+  subtotal: string | number;
+  product?: Product;
+}
+
+export interface Order {
+  id: number;
+  order_number: string;
+  status: string;
+  total: string | number;
+  payment_method: string;
+  payment_status: string;
+  shipping_address: string;
+  shipping_city: string;
+  shipping_phone: string;
+  tracking_number?: string;
+  created_at: string;
+  updated_at?: string;
+  items?: OrderItem[];
+}
+
+export async function fetchOrders(page = 1): Promise<PaginatedResponse<Order>> {
+  return apiClient<PaginatedResponse<Order>>(`/orders?page=${page}`);
+}
+
+export async function fetchOrder(orderId: number): Promise<{ order: Order }> {
+  return apiClient<{ order: Order }>(`/orders/${orderId}`);
+}
+

@@ -1,7 +1,7 @@
-import ComingSoon from "@/components/ComingSoon";
+import CartClient from "./CartClient";
 
 export const metadata = { title: "Cart" };
 
 export default function CartPage() {
-  return <ComingSoon title="Your Cart" kicker="Cart" />;
+  return <CartClient />;
 }

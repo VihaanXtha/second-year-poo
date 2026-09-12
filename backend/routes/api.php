@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\SuperSubCategoryController;
 use App\Http\Controllers\Admin\SubCategoryController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\OrderController;
@@ -14,7 +15,9 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\VendorApplicationController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
@@ -67,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/update-profile', [AuthController::class, 'updateProfile']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
     Route::post('/auth/set-password', [AuthController::class, 'setPassword']);
 
     // Customer routes
@@ -77,6 +81,21 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Payment initiation
     Route::post('/payments/initiate/{order}', [PaymentController::class, 'initiate']);
+
+    // Cart
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart', [CartController::class, 'store']);
+    Route::post('/cart/merge', [CartController::class, 'merge']);
+    Route::put('/cart/{cartItem}', [CartController::class, 'update']);
+    Route::delete('/cart/{cartItem}', [CartController::class, 'destroy']);
+    Route::delete('/cart', [CartController::class, 'clear']);
+
+    // Wishlist
+    Route::get('/wishlist', [WishlistController::class, 'index']);
+    Route::post('/wishlist', [WishlistController::class, 'store']);
+    Route::post('/wishlist/toggle', [WishlistController::class, 'toggle']);
+    Route::post('/wishlist/merge', [WishlistController::class, 'merge']);
+    Route::delete('/wishlist/{wishlistItem}', [WishlistController::class, 'destroy']);
 });
 
 // Public content routes

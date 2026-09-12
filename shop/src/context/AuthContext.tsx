@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { AddressValue } from '@/components/NepalAddressPicker';
 
 export interface User {
   id: number;
@@ -10,6 +11,10 @@ export interface User {
   role: string;
   address?: string;
   city?: string;
+  province?: string;
+  district?: string;
+  municipality?: string;
+  ward?: string;
   postal_code?: string;
   country?: string;
   email_verified: boolean;
@@ -20,14 +25,57 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (identifier: string, password: string) => Promise<void>;
-  signup: (name: string, identifier: string, password: string, channel: 'email' | 'phone', address?: string) => Promise<{ user: User; channel: string }>;
+  signup: (name: string, identifier: string, password: string, channel: 'email' | 'phone', address?: AddressValue) => Promise<{ user: User; channel: string }>;
   logout: () => Promise<void>;
   verifyEmailOtp: (email: string, code: string) => Promise<User>;
   sendPhoneOtp: (userId: number, phone?: string) => Promise<{ phone: string }>;
   verifyPhoneOtp: (userId: number, code: string) => Promise<User>;
   resendOtp: (email: string, type: 'email_verification' | 'phone_verification' | 'password_reset') => Promise<void>;
   googleLogin: () => Promise<void>;
+  updateProfile: (profile: { name?: string; phone?: string; address?: string; city?: string; province?: string; district?: string; municipality?: string; ward?: string; postal_code?: string; country?: string }) => Promise<User>;
+  changePassword: (currentPassword: string, password: string, passwordConfirmation: string) => Promise<void>;
+  fetchProfile: () => Promise<User>;
   loading: boolean;
+}
+
+/**
+ * Map the backend's user payload (snake_case, structured Nepal address fields)
+ * onto the shop's User shape. Used by every auth flow that receives a user.
+ */
+function mapUser(data: {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: string;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  district?: string | null;
+  municipality?: string | null;
+  ward?: string | null;
+  postal_code?: string | null;
+  country?: string | null;
+  email_verified: boolean;
+  phone_verified: boolean;
+}): User {
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    phone: data.phone ?? undefined,
+    role: data.role,
+    address: data.address ?? undefined,
+    city: data.city ?? undefined,
+    province: data.province ?? undefined,
+    district: data.district ?? undefined,
+    municipality: data.municipality ?? undefined,
+    ward: data.ward ?? undefined,
+    postal_code: data.postal_code ?? undefined,
+    country: data.country ?? undefined,
+    email_verified: data.email_verified,
+    phone_verified: data.phone_verified,
+  };
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -77,41 +125,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!res.ok) {
       if (data.requires_phone_verification) {
-        const userData: User = {
-          id: data.user.id,
-          name: data.user.name,
-          email: data.user.email,
-          phone: data.user.phone,
-          role: data.user.role,
-          email_verified: data.user.email_verified,
-          phone_verified: data.user.phone_verified,
-        };
-        saveUser(userData);
+        saveUser(mapUser(data.user));
         throw new Error('PHONE_VERIFICATION_REQUIRED');
       }
       throw new Error(data.message || 'Login failed');
     }
 
-    const userData: User = {
-      id: data.user.id,
-      name: data.user.name,
-      email: data.user.email,
-      phone: data.user.phone,
-      role: data.user.role,
-      address: data.user.address,
-      city: data.user.city,
-      postal_code: data.user.postal_code,
-      country: data.user.country,
-      email_verified: data.user.email_verified,
-      phone_verified: data.user.phone_verified,
-    };
+    const userData = mapUser(data.user);
     saveUser(userData);
     if (data.token) {
       localStorage.setItem('circuit-bazaar-token', data.token);
     }
   }, [saveUser]);
 
-  const signup = useCallback(async (name: string, identifier: string, password: string, channel: 'email' | 'phone', address?: string) => {
+  const signup = useCallback(async (name: string, identifier: string, password: string, channel: 'email' | 'phone', address?: AddressValue) => {
     const body: Record<string, unknown> = {
       name,
       password,
@@ -126,7 +153,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (address) {
-      body.address = address;
+      body.province = address.province;
+      body.district = address.district;
+      body.municipality = address.municipality;
+      body.ward = address.ward;
+      body.postal_code = address.postal_code;
+      body.country = address.country;
+      // Free-text street/block line; Nepal address fields carry the structured part.
+      body.address = address.municipality ? `Ward ${address.ward}, ${address.municipality}` : undefined;
+      body.city = address.district;
     }
 
     const res = await fetch(`${API_URL}/auth/register`, {
@@ -142,15 +177,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(msg);
     }
 
-    const userData: User = {
-      id: data.user.id,
-      name: data.user.name,
-      email: data.user.email,
-      phone: data.user.phone,
-      role: data.user.role,
+    const userData = mapUser({
+      ...data.user,
       email_verified: false,
       phone_verified: false,
-    };
+    });
     saveUser(userData);
 
     return { user: userData, channel: data.user.channel };
@@ -169,15 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data.message || 'Email verification failed');
     }
 
-    const userData: User = {
-      id: data.user.id,
-      name: data.user.name,
-      email: data.user.email,
-      phone: data.user.phone,
-      role: data.user.role,
-      email_verified: data.user.email_verified,
-      phone_verified: data.user.phone_verified,
-    };
+    const userData = mapUser(data.user);
     saveUser(userData);
     if (data.token) {
       localStorage.setItem('circuit-bazaar-token', data.token);
@@ -219,15 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data.message || 'Phone verification failed');
     }
 
-    const userData: User = {
-      id: data.user.id,
-      name: data.user.name,
-      email: data.user.email,
-      phone: data.user.phone,
-      role: data.user.role,
-      email_verified: data.user.email_verified,
-      phone_verified: data.user.phone_verified,
-    };
+    const userData = mapUser(data.user);
     saveUser(userData);
     if (data.token) {
       localStorage.setItem('circuit-bazaar-token', data.token);
@@ -274,11 +289,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('circuit-bazaar-token');
   }, []);
 
+  const fetchProfile = useCallback(async () => {
+    const token = localStorage.getItem('circuit-bazaar-token');
+    const res = await fetch(`${API_URL}/auth/me`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) {
+      throw new Error('Failed to load profile');
+    }
+    const data = await res.json();
+    const userData = mapUser(data.user);
+    saveUser(userData);
+    return userData;
+  }, [saveUser]);
+
+  const updateProfile = useCallback(async (profile: { name?: string; phone?: string; address?: string; city?: string; province?: string; district?: string; municipality?: string; ward?: string; postal_code?: string; country?: string }) => {
+    const token = localStorage.getItem('circuit-bazaar-token');
+    const res = await fetch(`${API_URL}/auth/update-profile`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(profile),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      const msg = data.errors ? Object.values(data.errors).flat().join(', ') : (data.message || 'Update failed');
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    const userData = mapUser(data.user);
+    saveUser(userData);
+    return userData;
+  }, [saveUser]);
+
+  const changePassword = useCallback(async (currentPassword: string, password: string, passwordConfirmation: string) => {
+    const res = await fetch(`${API_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('circuit-bazaar-token') ?? ''}`,
+      },
+      body: JSON.stringify({
+        current_password: currentPassword,
+        password,
+        password_confirmation: passwordConfirmation,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      const msg = data.errors ? Object.values(data.errors).flat().join(', ') : (data.message || 'Password change failed');
+      throw new Error(msg);
+    }
+  }, []);
+
   // Children always render so pages SSR normally; since `user` hydrates
   // synchronously during first render (see the lazy initializer above) and
   // `loading` is always false, there is nothing to gate on mount.
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, verifyEmailOtp, sendPhoneOtp, verifyPhoneOtp, resendOtp, googleLogin, loading }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, verifyEmailOtp, sendPhoneOtp, verifyPhoneOtp, resendOtp, googleLogin, updateProfile, changePassword, fetchProfile, loading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -298,6 +371,9 @@ export function useAuth() {
       verifyPhoneOtp: async () => ({} as User),
       resendOtp: async () => {},
       googleLogin: async () => {},
+      updateProfile: async () => ({} as User),
+      changePassword: async () => {},
+      fetchProfile: async () => ({} as User),
       loading: false,
     };
   }

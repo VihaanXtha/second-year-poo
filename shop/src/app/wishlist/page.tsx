@@ -1,7 +1,7 @@
-import ComingSoon from "@/components/ComingSoon";
+import WishlistClient from "./WishlistClient";
 
 export const metadata = { title: "Wishlist" };
 
 export default function WishlistPage() {
-  return <ComingSoon title="Your Wishlist" kicker="Wishlist" />;
+  return <WishlistClient />;
 }

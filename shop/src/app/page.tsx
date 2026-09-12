@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   getAdvertisements,
@@ -14,62 +15,27 @@ import {
   type Category,
   type Product,
   type Slider,
-  formatPrice,
 } from "@/lib/api";
 import Footer from "@/components/Footer";
+import ProductCard from "@/components/ProductCard";
 
 const HERO_INTERVAL_MS = 2500;
 
 function useCarousel(length: number, intervalMs: number, paused: boolean) {
   const [index, setIndex] = useState(0);
   const safeLength = Math.max(length, 1);
-  const go = (next: number) => setIndex(((next % safeLength) + safeLength) % safeLength);
-  useEffect(() => {
+  const [prevLength, setPrevLength] = useState(length);
+  if (prevLength !== length) {
+    setPrevLength(length);
     setIndex(0);
-  }, [length]);
+  }
+  const go = (next: number) => setIndex(((next % safeLength) + safeLength) % safeLength);
   useEffect(() => {
     if (paused || length <= 1) return;
     const t = setInterval(() => setIndex((i) => (i + 1) % length), intervalMs);
     return () => clearInterval(t);
   }, [length, intervalMs, paused]);
   return { index, go, next: () => go(index + 1), prev: () => go(index - 1) };
-}
-
-function ProductCard({ product }: { product: Product }) {
-  return (
-    <Link
-      href={`/product/${product.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-3 transition hover:border-red-300 hover:shadow-md"
-    >
-      <div className="aspect-square w-full overflow-hidden rounded-lg bg-slate-50">
-        {product.image ? (
-          <img
-            src={product.image}
-            alt={product.name}
-            className="h-full w-full object-contain p-3"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
-            No image
-          </div>
-        )}
-      </div>
-      <div className="mt-3 space-y-1">
-        {product.sku && <p className="font-mono text-[11px] text-slate-400">{product.sku}</p>}
-        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900">
-          {product.name}
-        </h3>
-        <p className="font-mono text-sm font-bold text-red-600">{formatPrice(product.price)}</p>
-        {typeof product.total_sold === "number" && product.total_sold > 0 && (
-          <p className="text-xs text-amber-600">{product.total_sold} sold</p>
-        )}
-        {product.stock !== undefined && product.stock < 5 && (
-          <p className="text-xs text-amber-600">Only {product.stock} left</p>
-        )}
-      </div>
-    </Link>
-  );
 }
 
 function SectionTitle({ kicker, title }: { kicker: string; title: string }) {
@@ -96,7 +62,16 @@ function HeroSlider({ sliders }: { sliders: Slider[] }) {
       <div className="relative h-64 sm:h-80 lg:h-96">
         {sliders.map((s, i) => (
           <div key={s.id} className={`absolute inset-0 transition-opacity duration-500 ${i === index ? "opacity-100" : "pointer-events-none opacity-0"}`}>
-            <img src={s.image_url} alt={s.title} className="h-full w-full object-cover" />
+            <div className="relative h-full w-full">
+              <Image
+                src={s.image_url}
+                alt={s.title}
+                fill
+                sizes="100vw"
+                priority={i === index}
+                className="object-cover"
+              />
+            </div>
             <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/40 to-transparent" />
           </div>
         ))}
@@ -141,13 +116,40 @@ function useAutoScrollHeight(ref: React.RefObject<HTMLDivElement | null>, items:
       el.scrollTo({ left: atEnd ? 0 : el.scrollLeft + el.clientWidth * 0.6, behavior: "smooth" });
     }, intervalMs);
     return () => clearInterval(t);
-  }, [items.length, intervalMs]);
+  }, [items.length, intervalMs, ref]);
 }
 
+function CategoryRow({
+  scrollRef,
+  items,
+}: {
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  items: Category[];
+}) {
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto pb-1 scroll-smooth"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {items.map((cat) => (
+          <Link
+            key={cat.id}
+            href={`/category/${cat.slug}`}
+            className="flex shrink-0 flex-col items-center gap-2 rounded-xl border border-slate-100 bg-white px-3 py-3 text-center transition hover:border-red-200 hover:bg-red-50"
+          >
+            <span className="material-symbols-outlined text-[26px] text-red-600">{cat.icon || "category"}</span>
+            <span className="line-clamp-2 text-xs font-semibold text-slate-800">{cat.name}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 function CategoryStrip({ categories }: { categories: Category[] }) {
   const rowARef = useRef<HTMLDivElement>(null);
   const rowBRef = useRef<HTMLDivElement>(null);
-  if (categories.length === 0) return null;
 
   // Two stacked auto-scrolling rows (first half / second half) so mobile
   // gets a proper two-row band instead of two columns in one row.
@@ -155,36 +157,16 @@ function CategoryStrip({ categories }: { categories: Category[] }) {
   const rowA = categories.slice(0, half);
   const rowB = categories.slice(half);
 
+  // Hooks must run unconditionally — do this before any early return.
   useAutoScrollHeight(rowARef, rowA.map((c) => c.id), HERO_INTERVAL_MS);
   useAutoScrollHeight(rowBRef, rowB.map((c) => c.id), HERO_INTERVAL_MS);
 
+  if (categories.length === 0) return null;
+
   return (
     <section aria-label="Shop by category" className="border-b border-slate-100 bg-slate-50">
-      {(() => {
-        const rows: { key: string | number; ref: React.RefObject<HTMLDivElement | null>; items: Category[] }[] = [];
-        if (rowA.length > 0) rows.push({ key: rowA[0].id, ref: rowARef, items: rowA });
-        if (rowB.length > 0) rows.push({ key: rowB[0].id, ref: rowBRef, items: rowB });
-        return rows.map((row) => (
-          <div key={row.key} className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
-            <div
-              ref={row.ref}
-              className="flex gap-3 overflow-x-auto pb-1 scroll-smooth"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-              {row.items.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/category/${cat.slug}`}
-                  className="flex shrink-0 flex-col items-center gap-2 rounded-xl border border-slate-100 bg-white px-3 py-3 text-center transition hover:border-red-200 hover:bg-red-50"
-                >
-                  <span className="material-symbols-outlined text-[26px] text-red-600">{cat.icon || "category"}</span>
-                  <span className="line-clamp-2 text-xs font-semibold text-slate-800">{cat.name}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        ));
-      })()}
+      {rowA.length > 0 && <CategoryRow scrollRef={rowARef} items={rowA} />}
+      {rowB.length > 0 && <CategoryRow scrollRef={rowBRef} items={rowB} />}
     </section>
   );
 }
@@ -202,7 +184,17 @@ function AdSlider({ ads }: { ads: Advertisement[] }) {
       >
         <div className="relative h-44 overflow-hidden rounded-2xl sm:h-56">
           {ads.map((ad, i) => {
-            const img = <img src={ad.image} alt={ad.title || "Advertisement"} className="h-full w-full object-cover" loading="lazy" />;
+            const img = (
+              <div className="relative h-full w-full">
+                <Image
+                  src={ad.image}
+                  alt={ad.title || "Advertisement"}
+                  fill
+                  sizes="100vw"
+                  className="object-cover"
+                />
+              </div>
+            );
             const cls = `absolute inset-0 transition-opacity duration-500 ${i === index ? "opacity-100" : "pointer-events-none opacity-0"}`;
             if (!ad.link_url) return <div key={ad.id} className={cls}>{img}</div>;
             return ad.link_type === "external_url" ? (

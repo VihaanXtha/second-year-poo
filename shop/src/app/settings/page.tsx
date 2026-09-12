@@ -1,7 +1,7 @@
-import ComingSoon from "@/components/ComingSoon";
+import SettingsClient from "./SettingsClient";
 
 export const metadata = { title: "Settings" };
 
 export default function SettingsPage() {
-  return <ComingSoon title="Settings" kicker="Account settings" />;
+  return <SettingsClient />;
 }
