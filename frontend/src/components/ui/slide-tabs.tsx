@@ -1,3 +1,6 @@
+"use client";
+
+import Link from "next/link";
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
@@ -21,8 +24,8 @@ interface SlideTabsProps {
   className?: string;
 }
 
-export const SlideTabs = ({ 
-  tabs, 
+export const SlideTabs = ({
+  tabs,
   selectedIndex: controlledSelectedIndex,
   onSelect,
   className = "relative mx-auto flex w-fit rounded-full border-2 border-black bg-white p-1 dark:border-white dark:bg-neutral-800"
@@ -32,14 +35,16 @@ export const SlideTabs = ({
     width: 0,
     opacity: 0,
   });
-  const [uncontrolledSelected, setUncontrolledSelected] = useState(0);
   const tabsRef = useRef<(HTMLLIElement | null)[]>([]);
 
-  const isControlled = controlledSelectedIndex !== undefined;
-  const selected = isControlled ? controlledSelectedIndex : uncontrolledSelected;
-  const setSelected = isControlled ? onSelect ?? (() => {}) : setUncontrolledSelected;
+  // -1 = nothing selected (e.g. home / login pages).
+  const selected = controlledSelectedIndex ?? -1;
 
   useEffect(() => {
+    if (selected < 0) {
+      setPosition((prev) => ({ ...prev, opacity: 0 }));
+      return;
+    }
     const selectedTab = tabsRef.current[selected];
     if (selectedTab) {
       const { width } = selectedTab.getBoundingClientRect();
@@ -54,6 +59,10 @@ export const SlideTabs = ({
   return (
     <ul
       onMouseLeave={() => {
+        if (selected < 0) {
+          setPosition((prev) => ({ ...prev, opacity: 0 }));
+          return;
+        }
         const selectedTab = tabsRef.current[selected];
         if (selectedTab) {
           const { width } = selectedTab.getBoundingClientRect();
@@ -66,7 +75,10 @@ export const SlideTabs = ({
       }}
       className={className}
     >
-      {tabs.map((tab, i) => (
+      {tabs.map((tab, i) => {
+        const innerClassName =
+          "block px-3 py-1.5 text-xs uppercase md:px-5 md:py-3 md:text-base";
+        return (
         <li
           key={tab.label}
           ref={(el) => {
@@ -82,15 +94,52 @@ export const SlideTabs = ({
               opacity: 1,
             });
           }}
-          onClick={() => {
-            setSelected(i);
-            tab.onClick?.();
-          }}
-          className="relative z-10 block cursor-pointer px-3 py-1.5 text-xs uppercase text-white mix-blend-difference md:px-5 md:py-3 md:text-base"
+          // NOTE: no onClick on the <li> when the tab is a link — the inner
+          // <Link>/<a>/<button> handles navigation natively. Attaching a second
+          // handler on the <li> only risks swallowing the click.
+          onClick={
+            tab.href
+              ? undefined
+              : () => {
+                  onSelect?.(i);
+                  tab.onClick?.();
+                }
+          }
+          className="relative z-10 block cursor-pointer"
         >
-          {tab.label}
+          {tab.href ? (
+            tab.external ? (
+              <a
+                href={tab.href}
+                onClick={() => onSelect?.(i)}
+                className={`${innerClassName} text-inherit hover:text-inherit focus:text-inherit visited:text-inherit no-underline`}
+              >
+                {tab.label}
+              </a>
+            ) : (
+              <Link
+                href={tab.href}
+                onClick={() => onSelect?.(i)}
+                className={`${innerClassName} text-inherit hover:text-inherit focus:text-inherit visited:text-inherit no-underline`}
+              >
+                {tab.label}
+              </Link>
+            )
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                onSelect?.(i);
+                tab.onClick?.();
+              }}
+              className={`${innerClassName} text-inherit`}
+            >
+              {tab.label}
+            </button>
+          )}
         </li>
-      ))}
+        );
+      })}
 
       <Cursor position={position} />
     </ul>
@@ -101,10 +150,12 @@ export const SlideTabs = ({
 const Cursor = ({ position }: { position: TabPosition }) => {
   return (
     <motion.li
+      aria-hidden="true"
       animate={{
         ...position,
       }}
-      className="absolute z-0 h-7 rounded-full bg-black dark:bg-white md:h-12"
+      style={{ pointerEvents: "none" }}
+      className="pointer-events-none absolute z-0 h-7 rounded-full bg-black dark:bg-white md:h-12"
     />
   );
 };

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -131,8 +131,21 @@ export default function LoginPage() {
               Sign up
             </Link>
           </div>
+          <div className="mt-3 text-center text-sm">
+            <Link href="/forgot-password" className="text-slate-500 hover:text-slate-700 hover:underline">
+              Forgot password?
+            </Link>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center px-4"><p className="text-slate-500 text-sm">Loading…</p></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

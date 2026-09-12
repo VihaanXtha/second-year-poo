@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { NepalAddressPicker, AddressValue } from "@/components/NepalAddressPicker";
@@ -9,7 +9,7 @@ import Link from "next/link";
 type Step = 1 | 2 | 3 | 4;
 type Channel = 'email' | 'phone';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const [step, setStep] = useState<Step>(1);
   const [channel, setChannel] = useState<Channel>('email');
   const [name, setName] = useState("");
@@ -407,8 +407,21 @@ export default function RegisterPage() {
               Sign in
             </Link>
           </div>
+          <div className="mt-3 text-center text-sm">
+            <Link href="/forgot-password" className="text-slate-500 hover:text-slate-700 hover:underline">
+              Forgot password?
+            </Link>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center px-4"><p className="text-slate-500 text-sm">Loading…</p></div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

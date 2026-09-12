@@ -1,4 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+// Server-only (non-NEXT_PUBLIC) when available so SSR inside Docker uses the
+// resolvable service name (e.g. http://backend:8000/api). Falls back to the
+// client-inlined NEXT_PUBLIC_API_URL for browser-side code paths.
+const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export async function apiClient<T = unknown>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;

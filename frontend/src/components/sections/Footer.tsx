@@ -1,11 +1,14 @@
 import Link from "next/link";
 
+const SHOP_URL = process.env.NEXT_PUBLIC_SHOP_URL || "http://localhost:3003";
+const VENDOR_URL = process.env.NEXT_PUBLIC_VENDOR_URL || "http://localhost:3002";
+
 const footerLinks = {
   marketplace: [
-    { name: "PC Components", href: "/shop" },
-    { name: "IoT Gear", href: "/shop" },
-    { name: "Laptops", href: "/shop" },
-    { name: "Networking", href: "/shop" },
+    { name: "PC Components", href: SHOP_URL, external: true },
+    { name: "IoT Gear", href: SHOP_URL, external: true },
+    { name: "Laptops", href: SHOP_URL, external: true },
+    { name: "Networking", href: SHOP_URL, external: true },
   ],
   company: [
     { name: "About", href: "/" },
@@ -21,7 +24,7 @@ const footerLinks = {
   ],
   vendors: [
     { name: "Become a Vendor", href: "/vendor" },
-    { name: "Vendor Portal", href: process.env.NEXT_PUBLIC_VENDOR_URL || "http://localhost:3002" },
+    { name: "Vendor Portal", href: VENDOR_URL },
   ],
   legal: [
     { name: "Privacy Policy", href: "/" },
@@ -59,12 +62,12 @@ export default function Footer() {
             <ul className="mt-4 space-y-3">
               {footerLinks.marketplace.map((link) => (
                 <li key={link.name}>
-                  <Link
+                  <a
                     href={link.href}
                     className="text-sm text-slate-400 hover:text-white transition-colors"
                   >
                     {link.name}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -85,16 +88,27 @@ export default function Footer() {
             </ul>
             <h3 className="mt-6 text-sm font-semibold text-white">Vendors</h3>
             <ul className="mt-4 space-y-3">
-              {footerLinks.vendors.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-slate-400 hover:text-white transition-colors"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
+              {footerLinks.vendors.map((link) =>
+                link.href.startsWith("http") ? (
+                  <li key={link.name}>
+                    <a
+                      href={link.href}
+                      className="text-sm text-slate-400 hover:text-white transition-colors"
+                    >
+                      {link.name}
+                    </a>
+                  </li>
+                ) : (
+                  <li key={link.name}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-slate-400 hover:text-white transition-colors"
+                    >
+                      {link.name}
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </div>
           <div>
