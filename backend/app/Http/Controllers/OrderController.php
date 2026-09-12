@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
@@ -48,7 +47,7 @@ class OrderController extends Controller
             'shipping_address' => ['required', 'string', 'max:500'],
             'shipping_city' => ['required', 'string', 'max:100'],
             'shipping_phone' => ['required', 'string', 'max:20'],
-            'payment_method' => ['required', 'in:esewa,khalti,cod,stripe'],
+            'payment_method' => ['required', 'in:esewa,khalti,cod'],
         ]);
 
         $total = 0;
@@ -80,7 +79,7 @@ class OrderController extends Controller
         DB::transaction(function () use ($validated, $total, $orderItems, &$order) {
             $order = Order::create([
                 'user_id' => Auth::id(),
-                'order_number' => 'ORD-'.strtoupper(Str::random(8)),
+                'order_number' => 'ORD-' . strtoupper(Str::random(8)),
                 'status' => 'pending',
                 'total' => $total,
                 'payment_method' => $validated['payment_method'],

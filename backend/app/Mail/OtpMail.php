@@ -13,7 +13,6 @@ class OtpMail extends Mailable
     use Queueable, SerializesModels;
 
     public $code;
-
     public $type;
 
     public function __construct(string $code, string $type)

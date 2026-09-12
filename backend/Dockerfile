@@ -1,34 +1,39 @@
-FROM php:8.4-cli
+FROM php:8.4-cli-alpine
 
-RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    libzip-dev \
+RUN apk add --no-cache \
     libpng-dev \
-    libjpeg-dev \
+    libjpeg-turbo-dev \
     libwebp-dev \
-    libfreetype-dev \
+    libxpm-dev \
+    libzip-dev \
     libxml2-dev \
-    libcurl4-openssl-dev \
-    libonig-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install pdo_mysql mbstring zip xml curl gd bcmath pcntl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    oniguruma-dev \
+    mysql-client \
+    nodejs \
+    npm
+
+RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-xpm
+RUN docker-php-ext-install pdo pdo_mysql pdo_sqlite mbstring exif gd
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www/html
+WORKDIR /app
 
 COPY composer.json composer.lock ./
-RUN composer install --no-scripts --prefer-dist
+RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction
 
 COPY . .
 
-RUN if [ ! -f .env ]; then cp .env.example .env; fi \
-    && php artisan key:generate --force \
-    && composer dump-autoload --optimize
+RUN composer dump-autoload --no-scripts --no-interaction
 
-EXPOSE 8000 8080
+RUN mkdir -p /app/storage/framework/{cache,sessions,views} \
+    && mkdir -p /app/storage/logs \
+    && chmod -R 775 /app/storage
 
-ENTRYPOINT ["/var/www/html/docker/entrypoint.sh"]
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+EXPOSE 8000
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]

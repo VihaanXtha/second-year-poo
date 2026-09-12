@@ -7,15 +7,24 @@ use Illuminate\Support\Facades\Log;
 
 class SmsService
 {
-    public function sendOtp(string $to, string $code): bool
+    public function sendOtp(string $to, string $code, string $via = 'twilio'): bool
+    {
+        if ($via === 'twilio') {
+            return $this->sendViaTwilio($to, $code);
+        }
+
+        Log::warning("Unknown SMS gateway: {$via}");
+        return false;
+    }
+
+    private function sendViaTwilio(string $to, string $code): bool
     {
         $sid = config('services.twilio.sid');
         $token = config('services.twilio.token');
         $from = config('services.twilio.from');
 
-        if (! $sid || ! $token || ! $from) {
+        if (!$sid || !$token || !$from) {
             Log::warning('Twilio credentials not configured.');
-
             return false;
         }
 
@@ -25,7 +34,7 @@ class SmsService
                 ->post("https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json", [
                     'From' => $from,
                     'To' => $to,
-                    'Body' => "Your Circuit Bazaar OTP is: {$code}. It expires in 5 minutes.",
+                    'Body' => "Your Circuit Bazaar OTP is: {$code}. It expires in 10 minutes.",
                 ]);
 
             if ($response->successful()) {

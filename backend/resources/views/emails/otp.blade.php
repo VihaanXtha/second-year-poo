@@ -25,7 +25,7 @@
             <div class="otp-box">
                 <div class="otp-code">{{ $code }}</div>
             </div>
-            <p class="note">This code will expire in 2 minutes. If you did not request this, please ignore this email.</p>
+            <p class="note">This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
         </div>
         <div class="footer">
             &copy; {{ date('Y') }} Circuit Bazaar. All rights reserved.
