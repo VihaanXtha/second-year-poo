@@ -54,7 +54,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function getApiUrl(): string {
   const viteApiUrl = (import.meta.env.VITE_API_URL || '').trim();
-  return viteApiUrl ? viteApiUrl.replace(/\/+$/, '') : 'http://localhost:8000/api';
+  return viteApiUrl ? viteApiUrl.replace(/\/+$/, '') : '/api';
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

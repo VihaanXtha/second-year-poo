@@ -7,9 +7,16 @@ interface SuperSubCategory {
   id: number;
   name: string;
   slug: string;
+  is_active: boolean;
   sub_category_id: number;
   sub_category?: { id: number; name: string; category?: { id: number; name: string } };
 }
+
+const generateSlug = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
 interface ApiFetch {
   (endpoint: string, options?: RequestInit): Promise<any>;
@@ -18,11 +25,13 @@ interface ApiFetch {
 export function SuperSubCategoriesPage({ apiFetch }: { apiFetch: ApiFetch }) {
   const [items, setItems] = useState<SuperSubCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<number | null>(null);
+    const [saving, setSaving] = useState<number | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
   const [parentId, setParentId] = useState<number | ''>('');
   const [parents, setParents] = useState<{ id: number; name: string }[]>([]);
+  const [isActive, setIsActive] = useState(true);
 
   const load = async () => {
     setLoading(true);
@@ -46,37 +55,49 @@ export function SuperSubCategoriesPage({ apiFetch }: { apiFetch: ApiFetch }) {
     load();
   }, [apiFetch]);
 
-  const startCreate = () => {
+    const startCreate = () => {
     setEditing(-1);
     setName('');
+    setSlug('');
     setParentId(parents[0]?.id || '');
+    setIsActive(true);
   };
 
   const startEdit = (item: SuperSubCategory) => {
     setEditing(item.id);
     setName(item.name);
+    setSlug(item.slug);
     setParentId(item.sub_category_id);
+    setIsActive(item.is_active);
   };
 
   const cancel = () => {
     setEditing(null);
     setName('');
+    setSlug('');
     setParentId('');
+    setIsActive(true);
   };
 
   const save = async () => {
     if (!name.trim() || parentId === '') return;
-    setSaving(editing === -1 ? -999 : editing);
+        setSaving(editing === -1 ? -999 : editing);
     try {
+      const payload = {
+        name,
+        slug: slug || generateSlug(name),
+        sub_category_id: Number(parentId),
+        is_active: isActive,
+      };
       if (editing === -1) {
         await apiFetch('/admin/super-sub-categories', {
           method: 'POST',
-          body: JSON.stringify({ name, sub_category_id: Number(parentId) }),
+          body: JSON.stringify(payload),
         });
       } else if (editing && editing > 0) {
         await apiFetch(`/admin/super-sub-categories/${editing}`, {
           method: 'PUT',
-          body: JSON.stringify({ name, sub_category_id: Number(parentId) }),
+          body: JSON.stringify(payload),
         });
       }
       await load();
@@ -89,7 +110,7 @@ export function SuperSubCategoriesPage({ apiFetch }: { apiFetch: ApiFetch }) {
     }
   };
 
-  const remove = async (id: number) => {
+    const remove = async (id: number) => {
     if (!confirm('Delete this super sub-category?')) return;
     try {
       await apiFetch(`/admin/super-sub-categories/${id}`, { method: 'DELETE' });
@@ -97,6 +118,19 @@ export function SuperSubCategoriesPage({ apiFetch }: { apiFetch: ApiFetch }) {
     } catch (e) {
       console.error(e);
       alert('Failed to delete');
+    }
+  };
+
+  const toggleStatus = async (item: SuperSubCategory) => {
+    try {
+      await apiFetch(`/admin/super-sub-categories/${item.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ ...item, is_active: !item.is_active }),
+      });
+      setItems(items.map(i => i.id === item.id ? { ...i, is_active: !i.is_active } : i));
+    } catch (e) {
+      console.error(e);
+      alert('Failed to update status');
     }
   };
 
@@ -123,7 +157,25 @@ export function SuperSubCategoriesPage({ apiFetch }: { apiFetch: ApiFetch }) {
           columns={[
             { key: 'name', header: 'Name', render: (item: SuperSubCategory) => <span className="font-medium text-slate-900">{item.name}</span> },
             { key: 'slug', header: 'Slug', render: (item: SuperSubCategory) => <span className="font-mono text-xs text-slate-500">{item.slug}</span> },
-            { key: 'parent', header: 'Parent Sub Category', render: (item: SuperSubCategory) => <span className="text-sm text-slate-600">{item.sub_category?.name || '-'}</span> },
+                        { key: 'parent', header: 'Parent Sub Category', render: (item: SuperSubCategory) => <span className="text-sm text-slate-600">{item.sub_category?.name || '-'}</span> },
+            {
+              key: 'is_active',
+              header: 'Status',
+              render: (item: SuperSubCategory) => (
+                <button
+                  onClick={() => toggleStatus(item)}
+                  className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors focus:outline-none ${
+                    item.is_active ? 'bg-green-500' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                      item.is_active ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              ),
+            },
             {
               key: 'actions',
               header: 'Actions',
@@ -159,9 +211,20 @@ export function SuperSubCategoriesPage({ apiFetch }: { apiFetch: ApiFetch }) {
                 ))}
               </select>
             </div>
-            <div>
+                                    <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Name</label>
               <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="e.g. RTX 40 Series" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Slug</label>
+              <input value={slug} onChange={(e) => setSlug(e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="e.g. rtx-40-series" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Status</label>
+              <select value={isActive ? 'active' : 'inactive'} onChange={(e) => setIsActive(e.target.value === 'active')} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2">

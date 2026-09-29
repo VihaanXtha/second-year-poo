@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const SHOP_URL = process.env.NEXT_PUBLIC_SHOP_URL || "http://localhost:3003";
 const VENDOR_URL = process.env.NEXT_PUBLIC_VENDOR_URL || "http://localhost:3002";
@@ -38,21 +39,15 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white">
-                <span className="material-symbols-outlined text-red-600 text-[20px]">
-                  hardware
-                </span>
-              </div>
-              <div className="leading-tight">
-                <span className="block text-lg font-bold tracking-tight text-white">
-                  Circuit Bazaar
-                </span>
-                  <span className="block text-[10px] font-mono font-bold tracking-widest text-red-400">
-                    Nepal hardware hub
-                  </span>
-              </div>
-            </div>
+            <Link href="/" className="inline-flex items-center gap-2 bg-transparent" aria-label="Circuit Bazaar home">
+              <Image
+                src="/bgclear_transparent_1376x768.png"
+                alt="Circuit Bazaar logo"
+                width={420}
+                height={235}
+                className="h-[60px] w-auto max-w-none object-contain bg-transparent"
+              />
+            </Link>
             <p className="mt-4 text-sm text-slate-300 leading-relaxed max-w-xs">
               Nepal&apos;s specification-first hardware marketplace. Verified vendors, transparent specs, local warranty.
             </p>

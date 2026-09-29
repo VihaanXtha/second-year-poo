@@ -242,7 +242,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 .card-hover-lift:hover {
   transform: translateY(-5px);
-  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(220, 38, 38, 0.25);
+  box-shadow: 0 20px 40px -12px rgba(215, 23, 23, 0.1), 0 0 0 1px rgba(220, 38, 38, 0.25);
 }
 
 .card-hover-lift-lg {

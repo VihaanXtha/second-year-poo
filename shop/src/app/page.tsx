@@ -59,7 +59,7 @@ function HeroSlider({ sliders }: { sliders: Slider[] }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative h-64 sm:h-80 lg:h-96">
+      <div className="relative h-[25.6rem] sm:h-[32rem] lg:h-[38.4rem]">
         {sliders.map((s, i) => (
           <div key={s.id} className={`absolute inset-0 transition-opacity duration-500 ${i === index ? "opacity-100" : "pointer-events-none opacity-0"}`}>
             <div className="relative h-full w-full">
@@ -312,7 +312,7 @@ export default function Home() {
         )}
       </section>
 
-      <Footer />
+      
     </div>
   );
 }

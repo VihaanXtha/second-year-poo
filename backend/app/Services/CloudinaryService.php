@@ -7,6 +7,7 @@ use Cloudinary\Exception\ConfigurationException;
 use Cloudinary\Exception\MediaApiException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class CloudinaryService
 {
@@ -23,14 +24,15 @@ class CloudinaryService
                 ],
             ]);
         } catch (ConfigurationException $e) {
-            Log::warning('Cloudinary configuration error: '.$e->getMessage());
+            Log::info('Cloudinary not configured — using local storage fallback.');
         }
     }
 
     public function upload(UploadedFile $file, ?string $folder = 'circuit-bazaar/products'): ?string
     {
+        // Local fallback when Cloudinary credentials are missing
         if (! $this->client) {
-            return null;
+            return $this->storeLocally($file, $folder);
         }
 
         try {
@@ -50,8 +52,9 @@ class CloudinaryService
 
     public function uploadRaw(UploadedFile $file, ?string $folder = 'circuit-bazaar/cvs'): ?string
     {
+        // Local fallback when Cloudinary credentials are missing
         if (! $this->client) {
-            return null;
+            return $this->storeLocally($file, $folder);
         }
 
         try {
@@ -71,10 +74,33 @@ class CloudinaryService
 
     public function deliveryUrl(string $url, int $width = 1200, int|string $quality = 'auto', string $format = 'auto'): string
     {
-        return str_replace(
-            '/upload/',
-            '/upload/c_limit,w_'.$width.',q_'.$quality.',f_'.$format.'/',
-            $url
-        );
+        // Only transform Cloudinary URLs (they contain /upload/)
+        if (str_contains($url, '/upload/')) {
+            return str_replace(
+                '/upload/',
+                '/upload/c_limit,w_'.$width.',q_'.$quality.',f_'.$format.'/',
+                $url
+            );
+        }
+
+        return $url;
+    }
+
+    /**
+     * Store an uploaded file locally on the 'public' disk and return its URL.
+     * Files are stored under storage/app/public/{folder}/ and served via
+     * the public/storage symlink at {APP_URL}/storage/{folder}/{filename}.
+     */
+    private function storeLocally(UploadedFile $file, string $folder): ?string
+    {
+        try {
+            $path = $file->store($folder, 'public');
+
+            return Storage::disk('public')->url($path);
+        } catch (\Exception $e) {
+            Log::error('Local file storage failed: '.$e->getMessage());
+
+            return null;
+        }
     }
 }

@@ -107,7 +107,7 @@ export const Login: React.FC = () => {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+            </button>
               </div>
             </div>
 
@@ -127,6 +127,11 @@ export const Login: React.FC = () => {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+        <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
+          <p className="text-xs font-semibold text-slate-600 mb-1">Demo Credentials</p>
+          <p className="text-xs text-slate-500 break-all">admin@circuitbazaar.com / admin123</p>
+        </div>
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">

@@ -1,5 +1,5 @@
 import Navbar from "@/components/sections/Navbar";
-import HomepageSlider from "@/components/sections/HomepageSlider";
+import Herobanner from "@/components/sections/Herobanner";
 import TrustedBrand from "@/components/sections/TrustedBrand";
 import About from "@/components/sections/About";
 import WhyCircuitBazaar from "@/components/sections/WhyCircuitBazaar";
@@ -16,7 +16,7 @@ import VendorCTA from "@/components/sections/VendorCTA";
 export default function Home() {
   return (
     <main className="relative">
-      <HomepageSlider />
+      <Herobanner />
       <TrustedBrand />
       <About />
       <WhyCircuitBazaar />
@@ -32,3 +32,4 @@ export default function Home() {
     </main>
   );
 }
+     

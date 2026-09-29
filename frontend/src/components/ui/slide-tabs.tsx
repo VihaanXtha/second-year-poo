@@ -28,7 +28,7 @@ export const SlideTabs = ({
   tabs,
   selectedIndex: controlledSelectedIndex,
   onSelect,
-  className = "relative mx-auto flex w-fit rounded-full border-2 border-black bg-white p-1 dark:border-white dark:bg-neutral-800"
+  className = "relative mx-auto flex w-fit rounded-full border-2 border-black bg-white/20 backdrop-blur-md p-1 dark:border-white dark:bg-neutral-800"
 }: SlideTabsProps) => {
   const [position, setPosition] = useState<TabPosition>({
     left: 0,
@@ -112,7 +112,7 @@ export const SlideTabs = ({
               <a
                 href={tab.href}
                 onClick={() => onSelect?.(i)}
-                className={`${innerClassName} text-inherit hover:text-inherit focus:text-inherit visited:text-inherit no-underline`}
+                className={`${innerClassName} text-inherit hover:text-red-600 focus:text-inherit visited:text-inherit no-underline`}
               >
                 {tab.label}
               </a>
@@ -120,7 +120,7 @@ export const SlideTabs = ({
               <Link
                 href={tab.href}
                 onClick={() => onSelect?.(i)}
-                className={`${innerClassName} text-inherit hover:text-inherit focus:text-inherit visited:text-inherit no-underline`}
+                className={`${innerClassName} text-inherit hover:text-red-600 focus:text-inherit visited:text-inherit no-underline`}
               >
                 {tab.label}
               </Link>
@@ -132,7 +132,7 @@ export const SlideTabs = ({
                 onSelect?.(i);
                 tab.onClick?.();
               }}
-              className={`${innerClassName} text-inherit`}
+                                          className={`${innerClassName} text-inherit hover:text-red-600`}
             >
               {tab.label}
             </button>
@@ -155,7 +155,7 @@ const Cursor = ({ position }: { position: TabPosition }) => {
         ...position,
       }}
       style={{ pointerEvents: "none" }}
-      className="pointer-events-none absolute z-0 h-7 rounded-full bg-black dark:bg-white md:h-12"
+      className="pointer-events-none absolute  z-0 h-3 rounded-full bg-transparent bg-white md:h-12"
     />
   );
 };

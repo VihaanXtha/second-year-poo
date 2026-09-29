@@ -26,19 +26,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('admin-auth');
+    // sessionStorage (not localStorage) => the auth session is dropped as soon
+    // as the browser/tab is closed, so the admin login does not persist across
+    // restarts. A 12h Sanctum token expiry (config/sanctum.php) caps it
+    // further if a tab is left open for longer than 12 hours.
+    const stored = sessionStorage.getItem('admin-auth');
     if (stored) {
       try {
         setUser(JSON.parse(stored));
       } catch {
-        localStorage.removeItem('admin-auth');
+        sessionStorage.removeItem('admin-auth');
       }
     }
     setLoading(false);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
+    const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -64,14 +68,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     setUser(userData);
-    localStorage.setItem('admin-auth', JSON.stringify(userData));
-    localStorage.setItem('admin-token', data.token);
+    sessionStorage.setItem('admin-auth', JSON.stringify(userData));
+    sessionStorage.setItem('admin-token', data.token);
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem('admin-auth');
-    localStorage.removeItem('admin-token');
+    sessionStorage.removeItem('admin-auth');
+    sessionStorage.removeItem('admin-token');
   }, []);
 
   if (loading) {
@@ -100,10 +104,10 @@ export function useAdminAuth() {
 }
 
 export function getAdminToken(): string | null {
-  return localStorage.getItem('admin-token');
+  return sessionStorage.getItem('admin-token');
 }
 
 export function getApiUrl(): string {
   const viteApiUrl = (import.meta.env.VITE_API_URL || '').trim();
-  return viteApiUrl ? viteApiUrl.replace(/\/+$/, '') : 'http://localhost:8000/api';
+  return viteApiUrl ? viteApiUrl.replace(/\/+$/, '') : '/api';
 }

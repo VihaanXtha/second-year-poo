@@ -20,7 +20,7 @@ export default async function CareerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white pt-24">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-slate-900 mb-4">Careers at Circuit Bazaar</h1>
@@ -44,3 +44,4 @@ export default async function CareerPage() {
     </div>
   );
 }
+

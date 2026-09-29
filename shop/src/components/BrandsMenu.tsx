@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { getBrands, type Brand } from "@/lib/api";
@@ -13,9 +12,7 @@ export default function BrandsMenu() {
   useEffect(() => {
     getBrands()
       .then((res) => setBrands(res.brands ?? []))
-      .catch(() => {
-        // API unreachable — dropdown simply renders "No brands yet"
-      });
+      .catch(() => {});
   }, []);
 
   return (
@@ -34,7 +31,7 @@ export default function BrandsMenu() {
           {brands.length === 0 ? (
             <p className="px-2 py-3 text-sm text-slate-500">No brands yet.</p>
           ) : (
-            <div className="max-h-80 overflow-y-auto">
+            <div>
               {brands.map((brand) => (
                 <Link
                   key={brand.id}
@@ -43,7 +40,6 @@ export default function BrandsMenu() {
                   className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-slate-50"
                 >
                   {brand.logo ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- brand logos come from arbitrary remote hosts
                     <img src={brand.logo} alt="" className="h-8 w-14 rounded border border-slate-100 object-contain" />
                   ) : (
                     <span className="flex h-8 w-14 items-center justify-center rounded border border-slate-100 bg-slate-50 text-[10px] font-bold text-slate-400">

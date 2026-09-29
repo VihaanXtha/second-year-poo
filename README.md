@@ -1,13 +1,27 @@
 # Circuit Bazaar
 
-A specification-first hardware marketplace for Nepal, built with Next.js 15, React 19, Tailwind CSS v4, and Laravel 13.
+A hardware marketplace built with Next.js 15, React 19, Tailwind CSS v4, and Laravel 13.
 
-## Local Development (No Docker)
+## Quick Start
 
-Run each service separately in its own terminal:
+Double-click `start.bat` in the project root. This launches all 5 services in separate windows:
+
+| Service  | URL                     |
+|----------|-------------------------|
+| Frontend | http://localhost:3000   |
+| Shop     | http://localhost:3003/shop |
+| Admin    | http://localhost:3001   |
+| Vendor   | http://localhost:3002   |
+| Backend  | http://localhost:8000/api |
+
+**Admin login:** admin@circuitbazaar.com / admin123
+
+## Local Development (Manual)
+
+Run each service in its own terminal:
 
 ```bash
-# Terminal 1 - Backend (MySQL must be running locally)
+# Terminal 1 - Backend (Laravel + SQLite, no MySQL needed)
 cd backend
 php artisan serve --host=0.0.0.0 --port=8000
 
@@ -28,64 +42,28 @@ cd vendor
 npm run dev
 ```
 
-## Service URLs
+## Database & File Storage
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:3000 |
-| Shop | http://localhost:3003 |
-| Admin | http://localhost:3001 |
-| Vendor | http://localhost:3002 |
-| Backend API | http://localhost:8000 |
+- **Database:** SQLite (single file at `backend/database/database.sqlite`)
+- **Images & PDFs:** Stored locally in `backend/storage/app/public/`
+- **Serve uploaded files:** Symlinked at `backend/public/storage/` -> `backend/storage/app/public/`
+- **No cloud accounts needed** - Cloudinary/S3/Twilio credentials are left blank; the app falls back to local storage automatically
 
-## Database
+## Project Structure
 
-- **MySQL 8.0** running locally on `localhost:3306`
-- Database: `circuit_bazaar`
-- Username: `root`
-- Password: `(empty)` or your local MySQL root password
-
-## Deployment
-
-Each service is deployed independently:
-
-| Service | Repo | Hosting |
-|---------|------|---------|
-| frontend | `home.circuit` | Vercel |
-| shop | `shop.circuit` | Vercel |
-| admin | `admin.circuit` | Vercel |
-| vendor | `vender.circuit` | Vercel |
-| backend | `backend.circuit` | Railway |
+```
+circuit-bazaar/
+  backend/       Laravel 13 API + SQLite database
+  frontend/      Next.js 15 marketing site (port 3000)
+  shop/          Next.js storefront (port 3003)
+  admin/         React 19 + Vite admin dashboard (port 3001)
+  vendor/        React 19 + Vite vendor portal (port 3002)
+  start.bat      Double-click to launch all services
+  stop.bat       Stops all running services
+```
 
 ## Tech Stack
 
-- **Frontend:** Next.js 15 (App Router), React 19, Tailwind CSS v4, TypeScript 5.8
-- **Backend:** Laravel 13, PHP 8.3+, Eloquent ORM, Sanctum
-- **Icons:** Material Symbols Outlined, Lucide React
-- **Package managers:** npm (frontend), Composer (backend)
-
-## Documentation
-
-- `ARCHITECTURE.md` — Full system architecture, API contracts, database schema
-- `FLOW_OF_FRONTEND.md` — Frontend app flow and pages
-- `FLOW_OF_SHOP.md` — Shop app flow and pages
-- `FLOW_OF_ADMIN.md` — Admin dashboard flow and pages
-- `FLOW_OF_VENDOR.md` — Vendor dashboard flow and pages
-- `FLOW_OF_BACKEND.md` — Backend API flow and endpoints
-- `SYSTEM_FLOW.md` — How all apps connect and interact
-
-## Authentication
-
-Client-side auth with `localStorage` persistence. Each frontend app has its own `AuthContext`.
-
-- Customer auth: email/phone + password, or Google OAuth
-- Admin auth: email + password (admin role only)
-- Vendor auth: email + password (vendor role only)
-- All auth goes through `/api/auth/*` endpoints
-- Tokens are Sanctum personal access tokens
-
-## Notes
-
-- **Local:** Run each app separately, no Docker
-- **Production:** Each service is deployed independently to Railway/Vercel
-- **Backend is Laravel 13** — see `backend/README.md` for backend-specific setup
+- **Frontend:** Next.js 15, React 19, Tailwind CSS v4, TypeScript
+- **Admin/Vendor:** Vite, React 19, Tailwind CSS v4
+- **Backend:** Laravel 13, PHP 8.4, SQLite, Sanctum API tokens

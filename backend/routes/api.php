@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
@@ -178,6 +178,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::patch('/users/{user}/status', [AdminController::class, 'updateUserStatus']);
     Route::post('/users', [AdminController::class, 'createAdmin']);
     Route::delete('/users/{user}', [AdminController::class, 'deleteUser']);
+    Route::put('/users/{user}', [AdminController::class, 'updateUser']);
     Route::get('/vendors', [AdminController::class, 'vendors']);
     Route::post('/vendors/{vendorStore}/verify', [AdminController::class, 'verifyVendor']);
     Route::post('/vendors/{vendorStore}/suspend', [AdminController::class, 'suspendVendor']);

@@ -4,9 +4,9 @@ Laravel 13 backend API for the Circuit Bazaar hardware marketplace.
 
 ## Prerequisites
 
-- PHP 8.3+
+- PHP 8.3+ (with pdo_sqlite extension — bundled by default)
 - Composer 2+
-- MySQL 8.0+ (local installation)
+- SQLite (file-based — **no MySQL server install needed** for local dev)
 - Node.js (for artisan serve with Vite assets if needed)
 
 ## Quick Start
@@ -21,27 +21,21 @@ composer install
 # 3. Copy environment file (if not already done)
 copy .env.example .env
 
-# 4. Update .env with your MySQL credentials
-# DB_CONNECTION=mysql
-# DB_HOST=127.0.0.1
-# DB_PORT=3306
-# DB_DATABASE=circuit_bazaar
-# DB_USERNAME=root
-# DB_PASSWORD=your_password
+# 4. .env.example already defaults to SQLite — no MySQL credentials needed.
+#    (To use MySQL instead, set DB_CONNECTION=mysql and DB_HOST/DB_DATABASE/etc.)
 
 # 5. Generate application key
 php artisan key:generate
 
-# 6. Create database (if not exists)
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS circuit_bazaar;"
+# 6. Run database migrations (auto-creates backend/database/database.sqlite)
+php artisan migrate
 
-# 7. Run database migrations
-php artisan migrate --force
+# 7. Seed demo data (optional)
+php artisan db:seed                           # full seed — requires Cloudinary credentials for image uploads
+php artisan db:seed --class=AdminUserSeeder   # safe: creates admin login (admin@circuitbazaar.com / admin123)
+php artisan db:seed --class=VendorUserSeeder  # safe: creates vendor login (vendor@circuitbazaar.com / vendor123)
 
-# 8. Seed database (optional, for demo data)
-php artisan db:seed --force
-
-# 9. Start the development server
+# 8. Start the development server
 php artisan serve --host=0.0.0.0 --port=8000
 ```
 
@@ -176,12 +170,9 @@ APP_KEY=base64:...
 APP_DEBUG=true
 APP_URL=http://localhost:8000
 
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=circuit_bazaar
-DB_USERNAME=root
-DB_PASSWORD=
+DB_CONNECTION=sqlite
+DB_DATABASE=database/database.sqlite
+DB_FOREIGN_KEYS=true
 
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.gmail.com
@@ -229,7 +220,7 @@ php artisan test --coverage
 
 ## Notes
 
-- **MySQL** is used for local development (install MySQL separately)
+- **SQLite** is used for local no-Docker development (no MySQL server install needed). Docker Compose still runs MySQL 8.0 in a container.
 - **API-only mode** — this backend is configured as an API server; frontend is served separately
 - **CORS** is configured to allow requests from localhost:3000-3003
 - **OTP expiry** is 5 minutes for all OTP types

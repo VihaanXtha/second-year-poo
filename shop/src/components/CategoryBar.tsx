@@ -34,8 +34,7 @@ export default function CategoryBar() {
     <div>
       {/* Desktop — category bar with mega menus */}
       <div className="relative hidden border-b border-slate-100 bg-slate-50 md:block" onMouseLeave={() => setActiveSlug(null)}>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <nav className="flex items-center gap-1 overflow-x-auto">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">        <nav className="flex flex-wrap items-center gap-1">
           {categories.map((cat) => (
             <div key={cat.id} className="relative">
               {activeSlug === cat.slug && <div className="fixed inset-0 z-40" onClick={() => setActiveSlug(null)} />}

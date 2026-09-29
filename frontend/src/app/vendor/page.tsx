@@ -105,7 +105,7 @@ export default function VendorApplyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white pt-24">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Become a Verified Vendor</h1>
@@ -305,3 +305,4 @@ export default function VendorApplyPage() {
     </div>
   );
 }
+

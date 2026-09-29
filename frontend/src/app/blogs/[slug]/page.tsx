@@ -51,7 +51,7 @@ export default async function BlogPostPage({ params }: Props) {
   const coverImage = post.cover_image || DEFAULT_BLOG_IMAGE;
 
   return (
-    <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white pt-24">
       <article className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
         <Link href="/blogs" className="inline-flex items-center text-sm text-slate-500 hover:text-red-700 mb-6">
           ← Back to Blogs

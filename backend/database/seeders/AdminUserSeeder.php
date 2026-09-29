@@ -19,8 +19,13 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Admin User',
                 'email' => 'admin@circuitbazaar.com',
                 'password' => Hash::make('admin123'),
-                'role' => 'admin',
+                                'role' => 'admin',
                 'status' => 'active',
+                // Admin accounts are created by other admins (not self-registered),
+                // so they shouldn't be blocked behind the customer phone-verification
+                // hard-gate in AuthController::login(). Marking it verified lets the
+                // seeded admin actually sign in locally.
+                'phone_verified_at' => now(),
             ]
         );
     }

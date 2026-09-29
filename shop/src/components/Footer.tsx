@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getCategories, type Category } from "@/lib/api";
 
-const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL || "http://localhost:3000";
+const HOME_URL = '/';
 
 const companyLinks = [
   { name: "About", href: `${HOME_URL}/` },

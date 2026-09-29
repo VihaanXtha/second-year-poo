@@ -401,11 +401,33 @@ class AdminController extends Controller
         return response()->json(['sales' => $sales]);
     }
 
-    public function categories()
+        public function categories()
     {
-        $categories = Category::orderBy('name')->get(['id', 'name', 'slug', 'spec_schema']);
+        $categories = Category::orderBy('name')->get(['id', 'name', 'slug', 'description', 'image', 'display_order', 'is_active', 'spec_schema']);
 
         return response()->json(['categories' => $categories]);
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'status' => ['nullable', 'in:active,inactive,banned'],
+        ]);
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        if (! empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+        if (isset($validated['status'])) {
+            $user->status = $validated['status'];
+        }
+        $user->save();
+
+        return response()->json(['message' => 'Admin updated.', 'user' => $user]);
     }
 
     public function updateCategorySpecSchema(Request $request, Category $category)

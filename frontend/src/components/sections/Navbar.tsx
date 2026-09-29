@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -39,12 +40,17 @@ export default function Navbar() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-transparent`}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <span className="block text-2xl font-bold tracking-tight text-white">
-              Circuit Bazaar
-            </span>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 overflow-visible">
+        <div className="flex h-20 items-center justify-between overflow-visible">
+          <Link href="/" className="flex items-center gap-3 group overflow-visible shrink-0" aria-label="Circuit Bazaar home">
+            <Image
+              src="/bgclear_transparent_1376x768.png"
+              alt="Circuit Bazaar logo"
+              width={440}
+              height={246}
+              priority
+              className="h-[72px] w-auto max-w-none object-contain bg-transparent shrink-0"
+            />
           </Link>
 
           <nav className="hidden md:flex items-center">

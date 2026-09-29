@@ -37,9 +37,9 @@ export default async function CareerDetailPage({ params }: Props) {
     posting = await apiClient<JobPosting>(`/job-postings/${slug}`);
   } catch {
     return (
-      <div className="min-h-screen bg-white">
-        <Navbar />
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-20 text-center">
+          <div className="min-h-screen bg-white pt-24">
+      <Navbar />
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-20 text-center">
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Role not found</h1>
           <Link href="/career" className="text-red-700 font-medium hover:underline">
             View all careers
@@ -51,7 +51,7 @@ export default async function CareerDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pt-24">
       <Navbar />
       <article className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
         <Link href="/career" className="inline-flex items-center text-sm text-slate-500 hover:text-red-700 mb-6">

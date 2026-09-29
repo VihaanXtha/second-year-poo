@@ -31,6 +31,10 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false);
   const { isAuthenticated, logout } = useAdminAuth();
 
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
   const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     const token = getAdminToken();
     const isFormData = options.body instanceof FormData;
@@ -43,7 +47,7 @@ export default function App() {
     if (!isFormData) {
       headers['Content-Type'] = 'application/json';
     }
-    const res = await fetch(`${getApiUrl()}/api${endpoint}`, {
+    const res = await fetch(`${getApiUrl()}${endpoint}`, {
       ...options,
       headers: {
         ...headers,

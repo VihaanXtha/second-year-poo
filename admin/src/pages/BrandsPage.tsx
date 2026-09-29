@@ -24,11 +24,19 @@ export function BrandsPage({ apiFetch }: { apiFetch: ApiFetch }) {
   const [uploading, setUploading] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
 
-  const load = async () => {
+    const load = async () => {
     setLoading(true);
     try {
       const data = await apiFetch('/admin/brands');
-      setItems(data.brands || data || []);
+      const raw = data.brands || data || [];
+      // Map is_active (boolean from API) → status (string for UI)
+      setItems(raw.map((b: any) => ({
+        id: b.id,
+        name: b.name,
+        slug: b.slug,
+        logo: b.logo || '',
+        status: b.is_active ? 'active' : 'inactive',
+      })));
     } catch (e) {
       console.error(e);
       setItems([]);
@@ -56,14 +64,21 @@ export function BrandsPage({ apiFetch }: { apiFetch: ApiFetch }) {
     setForm({ name: '', slug: '', logo: '', status: 'active' });
   };
 
-  const save = async () => {
+    const save = async () => {
     if (!form.name.trim() || !form.slug.trim()) return;
     setSaving(editing === -1 ? -999 : editing);
     try {
+      // Map status (UI string) → is_active (API boolean)
+      const payload = {
+        name: form.name,
+        slug: form.slug,
+        logo: form.logo,
+        is_active: form.status === 'active',
+      };
       if (editing === -1) {
-        await apiFetch('/admin/brands', { method: 'POST', body: JSON.stringify(form) });
+        await apiFetch('/admin/brands', { method: 'POST', body: JSON.stringify(payload) });
       } else if (editing && editing > 0) {
-        await apiFetch(`/admin/brands/${editing}`, { method: 'PUT', body: JSON.stringify(form) });
+        await apiFetch(`/admin/brands/${editing}`, { method: 'PUT', body: JSON.stringify(payload) });
       }
       await load();
       cancel();
@@ -75,7 +90,7 @@ export function BrandsPage({ apiFetch }: { apiFetch: ApiFetch }) {
     }
   };
 
-  const remove = async (id: number) => {
+    const remove = async (id: number) => {
     if (!confirm('Delete this brand?')) return;
     try {
       await apiFetch(`/admin/brands/${id}`, { method: 'DELETE' });
@@ -83,6 +98,20 @@ export function BrandsPage({ apiFetch }: { apiFetch: ApiFetch }) {
     } catch (e) {
       console.error(e);
       alert('Failed to delete');
+    }
+  };
+
+  const toggleStatus = async (item: Brand) => {
+    const newStatus = item.status === 'active' ? 'inactive' : 'active';
+    try {
+      await apiFetch(`/admin/brands/${item.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ name: item.name, slug: item.slug, is_active: newStatus === 'active' }),
+      });
+      setItems(items.map(i => i.id === item.id ? { ...i, status: newStatus } : i));
+    } catch (e) {
+      console.error(e);
+      alert('Failed to update status');
     }
   };
 
@@ -128,9 +157,30 @@ export function BrandsPage({ apiFetch }: { apiFetch: ApiFetch }) {
             { key: 'name', header: 'Name', render: (item: Brand) => <span className="font-medium text-slate-900">{item.name}</span> },
             { key: 'slug', header: 'Slug', render: (item: Brand) => <span className="font-mono text-xs text-slate-500">{item.slug}</span> },
             { key: 'logo', header: 'Logo', render: (item: Brand) => item.logo ? <img src={item.logo} alt={item.name} className="h-8 w-8 object-contain rounded border border-slate-200" /> : <span className="text-xs text-slate-400">-</span> },
-            { key: 'status', header: 'Status', render: (item: Brand) => (
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${item.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-600'}`}>{item.status}</span>
-            )},
+                        {
+              key: 'status',
+              header: 'Status',
+              render: (item: Brand) => (
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    item.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-600'
+                  }`}>{item.status}</span>
+                  <button
+                    onClick={() => toggleStatus(item)}
+                    className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${
+                      item.status === 'active' ? 'bg-green-500' : 'bg-slate-300'
+                    }`}
+                    title={item.status === 'active' ? 'Deactivate' : 'Activate'}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        item.status === 'active' ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              ),
+            },
             {
               key: 'actions',
               header: 'Actions',
