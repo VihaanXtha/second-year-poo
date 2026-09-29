@@ -43,7 +43,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
               border: '1px solid #e2e8f0',
               boxShadow: '0 4px 12px rgba(15,23,42,0.06)',
             }}
-            formatter={(v: number) => [`$${v.toLocaleString()}`, 'Revenue']}
+            formatter={(v: any) => [`$${Number(v ?? 0).toLocaleString()}`, 'Revenue']}
           />
           <Area
             type="monotone"

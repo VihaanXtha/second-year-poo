@@ -61,20 +61,42 @@ export function ApplyForm({ posting }: { posting: JobPosting }) {
     formData.append('cv', cv);
 
     try {
-      const data = await new Promise<{ ok: boolean; status: number; json: () => Promise<any> }>((resolve, reject) => {
+      const data = await new Promise<{ ok: boolean; status: number; raw: string }>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', `${API_URL}/job-postings/${posting.id}/apply`);
+        // Ask Laravel to render errors as JSON (never an HTML/Whoops page).
+        xhr.setRequestHeader('Accept', 'application/json');
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
             setProgress(Math.round((event.loaded / event.total) * 100));
           }
         };
-        xhr.onload = () => resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, json: () => JSON.parse(xhr.responseText || '{}') });
+        xhr.onload = () => resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, raw: xhr.responseText || '' });
         xhr.onerror = () => reject(new Error('Network error. Please try again.'));
         xhr.send(formData);
       });
 
-      const json = await data.json();
+      // Never blindly JSON.parse — the server may return an HTML error page
+      // (e.g. PHP fatal / oversized upload), which used to crash with
+      // "Unexpected token '<', "<br /> <b>"... is not valid JSON".
+      let json: { message?: string } = {};
+      const text = data.raw.trim();
+      if (text) {
+        if (text.startsWith('<')) {
+          setError(
+            data.status === 413
+              ? 'CV file is too large for the server. Please use a smaller PDF (max 5MB).'
+              : 'Server error. Please try again in a moment.'
+          );
+          return;
+        }
+        try {
+          json = JSON.parse(text);
+        } catch {
+          setError('Unexpected server response. Please try again.');
+          return;
+        }
+      }
 
       if (!data.ok) {
         setError(json.message || 'Failed to submit application.');

@@ -16,6 +16,11 @@ interface AnalyticsProps {
   apiFetch: ApiFetch;
 }
 
+interface DayPoint {
+  date: string;
+  orders: number;
+}
+
 export function Analytics({ apiFetch }: AnalyticsProps) {
   const [range, setRange] = useState('30');
   const [search, setSearch] = useState('');
@@ -97,7 +102,7 @@ export function Analytics({ apiFetch }: AnalyticsProps) {
 
             <Card title="Orders per day" subtitle="Daily order count">
               {data?.by_day && data.by_day.length > 0 ? (
-                <OrdersChart data={data.by_day.map((d) => ({ date: d.date, orders: d.orders }))} />
+                <OrdersChart data={data.by_day.map((d: DayPoint) => ({ date: d.date, orders: d.orders }))} />
               ) : (
                 <EmptyState
                   icon="bar_chart"

@@ -46,6 +46,12 @@ const blankForm: ProductForm = {
   specs: {},
 };
 
+function categoryIdOf(cats: Category[], v: string): string {
+  if (!v) return '';
+  const found = cats.find((c) => String(c.id) === v || c.name === v);
+  return found ? String(found.id) : v;
+}
+
 export function Products({ apiFetch }: ProductsProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +62,7 @@ export function Products({ apiFetch }: ProductsProps) {
   const [openForm, setOpenForm] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(blankForm);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [allCategories, setAllCategories] = useState<Category[]>([]);
@@ -80,7 +87,7 @@ export function Products({ apiFetch }: ProductsProps) {
     setCategoriesLoading(true);
     setCategoriesError(null);
     try {
-      const data = await apiFetch<{ categories: Category[] }>('/api/categories');
+      const data = await apiFetch<{ categories: Category[] }>('/categories');
       setAllCategories(data.categories ?? []);
     } catch (e) {
       setCategoriesError(e instanceof Error ? e.message : 'Failed to load categories');
@@ -114,11 +121,13 @@ export function Products({ apiFetch }: ProductsProps) {
   const openCreate = () => {
     setEditing(null);
     setForm(blankForm);
+    setImageFile(null);
     setOpenForm(true);
   };
 
   const openEdit = (product: Product) => {
     setEditing(product);
+    setImageFile(null);
     const specs = (product.specs as Record<string, unknown>) || {};
     setForm({
       name: product.name || '',
@@ -139,22 +148,24 @@ export function Products({ apiFetch }: ProductsProps) {
     e.preventDefault();
     setSaving(true);
     try {
-      if (form.imagePreview) {
+      const categoryId = categoryIdOf(allCategories, form.category);
+      if (imageFile) {
         const fd = new FormData();
         fd.append('name', form.name);
         if (form.sku) fd.append('sku', form.sku);
         if (form.description) fd.append('description', form.description);
-        fd.append('category', form.category);
+        fd.append('category_id', categoryId);
         fd.append('price', String(Number(form.price) || 0));
         fd.append('stock', String(Number(form.stock) || 0));
         fd.append('status', form.status);
         if (Object.keys(form.specs).length > 0) {
           fd.append('specs', JSON.stringify(form.specs));
         }
-        fd.append('image', form.imagePreview);
+        fd.append('image', imageFile);
         if (editing) {
+          fd.append('_method', 'PUT');
           await apiFetch(`/vendor/products/${editing.id}`, {
-            method: 'PUT',
+            method: 'POST',
             body: fd,
           });
         } else {
@@ -168,7 +179,7 @@ export function Products({ apiFetch }: ProductsProps) {
           name: form.name,
           sku: form.sku || undefined,
           description: form.description || undefined,
-          category: form.category,
+          category_id: categoryId,
           price: Number(form.price) || 0,
           stock: Number(form.stock) || 0,
           status: form.status,
@@ -176,7 +187,7 @@ export function Products({ apiFetch }: ProductsProps) {
         if (Object.keys(form.specs).length > 0) {
           payload.specs = form.specs;
         }
-        if (form.image) {
+        if (form.image && !form.imagePreview) {
           payload.image = form.image;
         }
         if (editing) {
@@ -448,6 +459,7 @@ export function Products({ apiFetch }: ProductsProps) {
               className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:rounded-md file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800"
               onChange={(e) => {
                 const file = e.target.files?.[0] ?? null;
+                setImageFile(file);
                 if (file) {
                   const reader = new FileReader();
                   reader.onload = () => {
@@ -459,7 +471,7 @@ export function Products({ apiFetch }: ProductsProps) {
                   };
                   reader.readAsDataURL(file);
                 } else {
-                  setForm((f) => ({ ...f, imagePreview: null, image: f.image }));
+                  setForm((f) => ({ ...f, imagePreview: f.image || null }));
                 }
               }}
             />

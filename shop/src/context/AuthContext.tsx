@@ -31,7 +31,8 @@ interface AuthContextType {
   sendPhoneOtp: (userId: number, phone?: string) => Promise<{ phone: string }>;
   verifyPhoneOtp: (userId: number, code: string) => Promise<User>;
   resendOtp: (email: string, type: 'email_verification' | 'phone_verification' | 'password_reset') => Promise<void>;
-  googleLogin: () => Promise<void>;
+  googleLogin: (returnTo?: string) => Promise<void>;
+  completeGoogleSignIn: (code: string) => Promise<GoogleSignInResult>;
   updateProfile: (profile: { name?: string; phone?: string; address?: string; city?: string; province?: string; district?: string; municipality?: string; ward?: string; postal_code?: string; country?: string }) => Promise<User>;
   changePassword: (currentPassword: string, password: string, passwordConfirmation: string) => Promise<void>;
   fetchProfile: () => Promise<User>;
@@ -76,6 +77,45 @@ function mapUser(data: {
     email_verified: data.email_verified,
     phone_verified: data.phone_verified,
   };
+}
+
+/** Outcome of a completed Google sign-in, mirroring the exchange response. */
+export interface GoogleSignInResult {
+  user: User;
+  requiresProfileCompletion: boolean;
+  requiresPhoneVerification: boolean;
+}
+
+/**
+ * Where to send the user once Google finishes. The OAuth round-trip leaves the
+ * app entirely, so the in-app destination is parked in sessionStorage (keyed per
+ * tab) and read back by /auth/callback. sessionStorage is used rather than the
+ * `redirect_to` query param because the backend validates that value against an
+ * origin allow-list and only accepts an origin, never a path.
+ */
+const GOOGLE_RETURN_KEY = 'circuit-bazaar-google-return';
+
+export function rememberGoogleReturn(path: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(GOOGLE_RETURN_KEY, path);
+  } catch {
+    // Private-mode sessionStorage can throw; falling back to /account is fine.
+  }
+}
+
+export function takeGoogleReturn(fallback = '/account'): string {
+  if (typeof window === 'undefined') return fallback;
+  let stored: string | null = null;
+  try {
+    stored = sessionStorage.getItem(GOOGLE_RETURN_KEY);
+    sessionStorage.removeItem(GOOGLE_RETURN_KEY);
+  } catch {
+    return fallback;
+  }
+  // Only same-origin absolute paths; blocks `//evil.com` and `https://host` opens.
+  if (!stored || !/^\/(?!\/)/.test(stored)) return fallback;
+  return stored;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
@@ -264,12 +304,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const googleLogin = useCallback(async () => {
+  const googleLogin = useCallback(async (returnTo?: string) => {
+    if (returnTo) rememberGoogleReturn(returnTo);
     const redirectTo = encodeURIComponent(window.location.origin);
     // External OAuth redirect to the API backend, not an internal Next.js route.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- API_URL is absolute (http(s)://...), the rule can't see through the variable
     window.location.href = `${API_URL}/auth/google/redirect?redirect_to=${redirectTo}`;
   }, []);
+
+  const completeGoogleSignIn = useCallback(async (code: string): Promise<GoogleSignInResult> => {
+    const res = await fetch(`${API_URL}/auth/google/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.message || 'Google sign-in failed');
+    }
+
+    const userData = mapUser(data.user);
+    saveUser(userData);
+    if (data.token) {
+      localStorage.setItem('circuit-bazaar-token', data.token);
+    }
+
+    return {
+      user: userData,
+      requiresProfileCompletion: Boolean(data.requires_profile_completion),
+      requiresPhoneVerification: Boolean(data.requires_phone_verification),
+    };
+  }, [saveUser]);
 
   const logout = useCallback(async () => {
     try {
@@ -351,7 +418,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // synchronously during first render (see the lazy initializer above) and
   // `loading` is always false, there is nothing to gate on mount.
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, verifyEmailOtp, sendPhoneOtp, verifyPhoneOtp, resendOtp, googleLogin, updateProfile, changePassword, fetchProfile, loading }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, verifyEmailOtp, sendPhoneOtp, verifyPhoneOtp, resendOtp, googleLogin, completeGoogleSignIn, updateProfile, changePassword, fetchProfile, loading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -371,6 +438,9 @@ export function useAuth() {
       verifyPhoneOtp: async () => ({} as User),
       resendOtp: async () => {},
       googleLogin: async () => {},
+      completeGoogleSignIn: async () => {
+        throw new Error('useAuth must be used within an AuthProvider');
+      },
       updateProfile: async () => ({} as User),
       changePassword: async () => {},
       fetchProfile: async () => ({} as User),

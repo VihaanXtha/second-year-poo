@@ -60,12 +60,10 @@ export default function VendorApplyPage() {
       });
       setStep("verify");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Application failed";
-      if (message.includes('already pending verification')) {
-        setStep("verify");
-      } else {
-        setError(message);
-      }
+      // The backend now resends a fresh OTP for a pending application instead of
+      // returning "already pending verification", so any error reaching here is real
+      // (validation, rate limiting, or mail delivery) and must be shown.
+      setError(err instanceof Error ? err.message : "Application failed");
     } finally {
       setLoading(false);
     }

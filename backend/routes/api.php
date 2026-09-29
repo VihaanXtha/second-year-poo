@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
@@ -207,6 +207,7 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::post('/store', [VendorController::class, 'registerStore']);
     Route::put('/store', [VendorController::class, 'updateStore']);
     Route::get('/store', [VendorController::class, 'myStore']);
+    Route::get('/dashboard/stats', [VendorController::class, 'dashboardStats']);
 
     Route::get('/products', [VendorController::class, 'products']);
     Route::post('/products', [VendorController::class, 'createProduct']);

@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Mail\OtpMail;
+use App\Models\OrderItem;
 use App\Models\OtpCode;
+use App\Models\Product;
+use App\Models\Review;
 use App\Models\User;
 use App\Models\VendorStore;
 use App\Services\SmsService;
@@ -514,12 +517,7 @@ class AuthController extends Controller
                     'country' => $user->country,
                     'email_verified' => ! is_null($user->email_verified_at),
                 ],
-                'store' => [
-                    'id' => $store->id,
-                    'store_name' => $store->store_name,
-                    'verified' => (bool) $store->verified,
-                    'status' => $store->status,
-                ],
+                'store' => $this->vendorStorePayload($store),
                 'token' => $token,
             ]);
         }
@@ -537,14 +535,22 @@ class AuthController extends Controller
                 'country' => $user->country,
                 'email_verified' => ! is_null($user->email_verified_at),
             ],
-            'store' => [
-                'id' => $store->id,
-                'store_name' => $store->store_name,
-                'verified' => (bool) $store->verified,
-                'status' => $store->status,
-            ],
+            'store' => $this->vendorStorePayload($store),
             'token' => $token,
         ]);
+    }
+
+    private function vendorStorePayload(VendorStore $store): array
+    {
+        $store->rating = (float) (Review::where('vendor_store_id', $store->id)->avg('rating') ?? 0);
+        $store->total_products = Product::where('vendor_store_id', $store->id)->count();
+        $store->total_orders = OrderItem::where('vendor_store_id', $store->id)->distinct('order_id')->count('order_id');
+        $store->total_revenue = (float) (OrderItem::where('vendor_store_id', $store->id)
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.payment_status', 'paid')
+            ->sum('order_items.subtotal') ?? 0);
+
+        return $store->toArray();
     }
 
     public function forgotPassword(Request $request)

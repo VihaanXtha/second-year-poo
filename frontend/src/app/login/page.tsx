@@ -46,7 +46,10 @@ function LoginForm() {
     setLoading(true);
     setError("");
     try {
-      await googleLogin();
+      // Park the intended destination so /auth/callback can return here. The
+      // default "/" is left unset so the callback hands off to the shop portal
+      // exactly like the password-login path above.
+      await googleLogin(redirect && redirect !== "/" ? redirect : undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed");
       setLoading(false);

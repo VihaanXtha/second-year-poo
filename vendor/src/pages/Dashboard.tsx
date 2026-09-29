@@ -54,9 +54,10 @@ export function Dashboard({ apiFetch, setActiveNav }: DashboardProps) {
           setRecentOrders(list);
         }
         if (salesRes.status === 'fulfilled') {
-          const list = Array.isArray(salesRes.value)
-            ? salesRes.value
-            : salesRes.value?.data ?? [];
+          const rawSales: any = salesRes.value;
+          const list = Array.isArray(rawSales)
+            ? rawSales
+            : rawSales?.by_day ?? rawSales?.sales ?? rawSales?.data ?? [];
           const mapped: SalesDataPoint[] = list.map((d: any) => ({
             date: d.date || d.day || d.label || '',
             revenue: Number(d.revenue ?? d.sales ?? d.amount ?? 0),

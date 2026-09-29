@@ -11,6 +11,7 @@ use App\Models\Review;
 use App\Models\VendorStore;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -127,7 +128,44 @@ class VendorController extends Controller
             return response()->json(['message' => 'No store found.'], 404);
         }
 
+        $store->rating = (float) (Review::where('vendor_store_id', $store->id)->avg('rating') ?? 0);
+        $store->total_products = Product::where('vendor_store_id', $store->id)->count();
+        $store->total_orders = OrderItem::where('vendor_store_id', $store->id)->distinct('order_id')->count('order_id');
+        $store->total_revenue = (float) (OrderItem::where('vendor_store_id', $store->id)
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.payment_status', 'paid')
+            ->sum('order_items.subtotal') ?? 0);
+
         return response()->json(['store' => $store]);
+    }
+
+    public function dashboardStats()
+    {
+        $store = VendorStore::where('user_id', Auth::id())->firstOrFail();
+
+        $paidItems = OrderItem::where('vendor_store_id', $store->id)
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.payment_status', 'paid');
+
+        $totalRevenue = (float) ((clone $paidItems)->sum('order_items.subtotal') ?? 0);
+        $totalOrders = (clone $paidItems)->distinct()->count('order_items.order_id');
+        $totalProducts = Product::where('vendor_store_id', $store->id)->count();
+        $totalCustomers = (clone $paidItems)->distinct()->count('orders.user_id');
+
+        return response()->json([
+            'total_revenue' => $totalRevenue,
+            'revenue' => $totalRevenue,
+            'total_orders' => $totalOrders,
+            'orders' => $totalOrders,
+            'total_products' => $totalProducts,
+            'products' => $totalProducts,
+            'total_customers' => $totalCustomers,
+            'customers' => $totalCustomers,
+            'revenue_change' => 0,
+            'orders_change' => 0,
+            'products_change' => 0,
+            'customers_change' => 0,
+        ]);
     }
 
     public function products(Request $request)
@@ -149,6 +187,13 @@ class VendorController extends Controller
 
         $products = $query->latest()->paginate(20);
 
+        $products->getCollection()->transform(function ($product) {
+            $product->category = $product->category?->name ?? $product->category;
+            $product->category_id = $product->category_id ?? $product->category?->id;
+
+            return $product;
+        });
+
         return response()->json($products);
     }
 
@@ -160,16 +205,39 @@ class VendorController extends Controller
             return response()->json(['message' => 'Your store is pending approval — you cannot manage products yet.'], 403);
         }
 
+        $specsInput = $request->input('specs', []);
+        if (is_string($specsInput)) {
+            $decoded = json_decode($specsInput, true);
+            $specsInput = is_array($decoded) ? $decoded : [];
+            $request->merge(['specs' => $specsInput]);
+        }
+
         $validated = $request->validate([
-            'category_id' => ['required', 'exists:categories,id'],
+            'category' => ['required_without:category_id', 'string', 'max:255'],
+            'category_id' => ['required_without:category', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:100', 'unique:products,sku'],
+            'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku'],
             'description' => ['nullable', 'string', 'max:2000'],
             'price' => ['required', 'numeric', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
             'specs' => ['nullable', 'array'],
-            'status' => ['required', 'in:active,inactive,draft'],
+            'status' => ['required', 'in:active,inactive,draft,out_of_stock'],
         ]);
+
+        if (empty($validated['category_id'] ?? null) && ! empty($validated['category'] ?? null)) {
+            $byName = Category::where('name', $validated['category'])->first();
+            $bySlug = $byName ?: Category::where('slug', $validated['category'])->first();
+            if ($bySlug) {
+                $validated['category_id'] = $bySlug->id;
+            } else {
+                return response()->json(['message' => 'Category not found: '.$validated['category']], 422);
+            }
+        }
+
+        if (empty($validated['sku'] ?? null)) {
+            $validated['sku'] = 'SKU-'.strtoupper(substr(md5($validated['name'].microtime(true)), 0, 8));
+        }
+        unset($validated['category']);
 
         $category = Category::findOrFail($validated['category_id']);
         $specErrors = $this->validateSpecs($request->input('specs', []), $category->spec_schema);
@@ -200,6 +268,8 @@ class VendorController extends Controller
             $validated['image'] = $this->uploadProductImage($file);
         } elseif ($request->filled('image')) {
             $validated['image'] = $request->input('image');
+        } elseif ($request->filled('image_url')) {
+            $validated['image'] = $request->input('image_url');
         } else {
             $validated['image'] = null;
         }
@@ -221,18 +291,39 @@ class VendorController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
+        $specsInput = $request->input('specs', []);
+        if (is_string($specsInput)) {
+            $decoded = json_decode($specsInput, true);
+            $specsInput = is_array($decoded) ? $decoded : [];
+            $request->merge(['specs' => $specsInput]);
+        }
+
         $validated = $request->validate([
-            'category_id' => ['required', 'exists:categories,id'],
-            'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:100', 'unique:products,sku,'.$product->id],
+            'category' => ['sometimes', 'string', 'max:255'],
+            'category_id' => ['sometimes', 'exists:categories,id'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'sku' => ['sometimes', 'nullable', 'string', 'max:100', 'unique:products,sku,'.$product->id],
             'description' => ['nullable', 'string', 'max:2000'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'stock' => ['required', 'integer', 'min:0'],
+            'price' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'stock' => ['sometimes', 'required', 'integer', 'min:0'],
             'specs' => ['nullable', 'array'],
-            'status' => ['required', 'in:active,inactive,draft'],
+            'status' => ['sometimes', 'required', 'in:active,inactive,draft,out_of_stock'],
         ]);
 
-        $category = Category::findOrFail($validated['category_id']);
+        if (empty($validated['category_id'] ?? null) && ! empty($validated['category'] ?? null)) {
+            $byName = Category::where('name', $validated['category'])->first();
+            $bySlug = $byName ?: Category::where('slug', $validated['category'])->first();
+            if ($bySlug) {
+                $validated['category_id'] = $bySlug->id;
+            } else {
+                return response()->json(['message' => 'Category not found: '.$validated['category']], 422);
+            }
+        }
+        unset($validated['category']);
+
+        $category = empty($validated['category_id'] ?? null)
+            ? $product->category
+            : Category::findOrFail($validated['category_id']);
         $specErrors = $this->validateSpecs($request->input('specs', []), $category->spec_schema);
         if ($specErrors) {
             $validator = validator(['specs' => $request->input('specs', [])], [
@@ -259,11 +350,15 @@ class VendorController extends Controller
             $validated['image'] = $this->uploadProductImage($file);
         } elseif ($request->filled('image')) {
             $validated['image'] = $request->input('image');
-        } else {
-            $validated['image'] = $product->image;
+        } elseif ($request->filled('image_url')) {
+            $validated['image'] = $request->input('image_url');
         }
 
         $product->update($validated);
+
+        if ($request->filled('category_id')) {
+            OrderItem::where('product_id', $product->id)->update(['category_id' => $product->category_id]);
+        }
 
         return response()->json(['message' => 'Product updated.', 'product' => $product]);
     }
@@ -380,7 +475,38 @@ class VendorController extends Controller
         }
 
         $orderIds = $query->pluck('order_id');
-        $orders = Order::whereIn('id', $orderIds)->with('user')->latest()->paginate(20);
+        $limit = (int) $request->get('limit', 20);
+        $limit = max(1, min($limit, 100));
+        $orders = Order::whereIn('id', $orderIds)->with('user')->latest()->paginate($limit);
+
+        $orders->getCollection()->transform(function ($order) use ($store) {
+            $items = OrderItem::where('order_id', $order->id)
+                ->where('vendor_store_id', $store->id)
+                ->get();
+            $subtotal = (float) $items->sum('subtotal');
+
+            return [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'customer_name' => $order->user?->name,
+                'customer_email' => $order->user?->email,
+                'total' => $order->total,
+                'subtotal' => $subtotal,
+                'status' => $order->status,
+                'items_count' => $items->count(),
+                'created_at' => $order->created_at,
+                'shipping_address' => $order->shipping_address,
+                'items' => $items->map(fn ($it) => [
+                    'id' => $it->id,
+                    'product_id' => $it->product_id,
+                    'product_name' => $it->product_name,
+                    'quantity' => $it->quantity,
+                    'price' => $it->unit_price,
+                    'unit_price' => $it->unit_price,
+                    'subtotal' => $it->subtotal,
+                ])->values(),
+            ];
+        });
 
         return response()->json($orders);
     }
@@ -414,6 +540,70 @@ class VendorController extends Controller
 
         $period = $request->get('period', 'monthly');
 
+        if ($request->filled('days')) {
+            $days = max(1, min((int) $request->get('days'), 365));
+            $start = Carbon::now()->subDays($days - 1)->startOfDay();
+
+            $rows = OrderItem::where('vendor_store_id', $store->id)
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->where('orders.payment_status', 'paid')
+                ->where('orders.created_at', '>=', $start)
+                ->select(
+                    DB::raw('DATE(orders.created_at) as date'),
+                    DB::raw('SUM(order_items.subtotal) as revenue'),
+                    DB::raw('COUNT(DISTINCT order_items.order_id) as orders')
+                )->groupBy('date')->orderBy('date')->get()
+                ->keyBy('date');
+
+            $byDay = [];
+            for ($i = $days - 1; $i >= 0; $i--) {
+                $d = Carbon::now()->subDays($i)->toDateString();
+                $row = $rows->get($d);
+                $byDay[] = [
+                    'date' => $d,
+                    'revenue' => (float) ($row->revenue ?? 0),
+                    'orders' => (int) ($row->orders ?? 0),
+                ];
+            }
+
+            $totalRevenue = array_sum(array_column($byDay, 'revenue'));
+            $totalOrders = array_sum(array_column($byDay, 'orders'));
+
+            $byCategory = OrderItem::where('order_items.vendor_store_id', $store->id)
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->leftJoin('products', 'products.id', '=', 'order_items.product_id')
+                ->leftJoin('categories', 'categories.id', '=', 'products.category_id')
+                ->where('orders.payment_status', 'paid')
+                ->where('orders.created_at', '>=', $start)
+                ->select(
+                    DB::raw("COALESCE(categories.name, 'Uncategorized') as name"),
+                    DB::raw('SUM(order_items.subtotal) as value')
+                )->groupBy('name')->orderByDesc('value')->get();
+
+            $topProducts = OrderItem::where('order_items.vendor_store_id', $store->id)
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->where('orders.payment_status', 'paid')
+                ->where('orders.created_at', '>=', $start)
+                ->select(
+                    'order_items.product_id as id',
+                    DB::raw('MAX(order_items.product_name) as name'),
+                    DB::raw('SUM(order_items.quantity) as sold'),
+                    DB::raw('SUM(order_items.quantity) as quantity'),
+                    DB::raw('SUM(order_items.subtotal) as revenue'),
+                    DB::raw('SUM(order_items.subtotal) as total')
+                )->groupBy('order_items.product_id')->orderByDesc('revenue')->limit(10)->get();
+
+            return response()->json([
+                'total_revenue' => (float) $totalRevenue,
+                'total_orders' => (int) $totalOrders,
+                'average_order_value' => $totalOrders ? (float) $totalRevenue / $totalOrders : 0,
+                'by_day' => $byDay,
+                'by_category' => $byCategory,
+                'top_products' => $topProducts,
+                'sales' => $byDay,
+            ]);
+        }
+
         $query = OrderItem::where('vendor_store_id', $store->id)
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.payment_status', 'paid');
@@ -444,6 +634,16 @@ class VendorController extends Controller
             ->with('user', 'product')
             ->latest()
             ->paginate(15);
+
+        $reviews->getCollection()->transform(fn ($r) => [
+            'id' => $r->id,
+            'product_id' => $r->product_id,
+            'product_name' => $r->product?->name,
+            'customer_name' => $r->user?->name,
+            'rating' => $r->rating,
+            'comment' => $r->comment,
+            'created_at' => $r->created_at,
+        ]);
 
         return response()->json($reviews);
     }

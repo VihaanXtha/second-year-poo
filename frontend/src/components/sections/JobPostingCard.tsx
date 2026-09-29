@@ -47,18 +47,18 @@ export function JobPostingCard({ posting }: { posting: JobPosting }) {
 
   return (
     <div
-      className={`group rounded-2xl border bg-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/5 ${!posting.is_active || isExpired ? 'opacity-60 border-slate-200' : 'border-slate-200'}`}
+      className={`group rounded-2xl border bg-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/5 min-h-[136px] ${!posting.is_active || isExpired ? 'opacity-60 border-slate-200' : 'border-slate-200'}`}
     >
-      <div>
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3 mb-1">
-          <h2 className="text-xl font-semibold text-slate-900 group-hover:text-red-700 transition-colors">
+          <h2 className="text-xl font-semibold text-slate-900 group-hover:text-red-700 transition-colors leading-snug">
             {posting.title}
           </h2>
-          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+          <span className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 whitespace-nowrap">
             {posting.employment_type}
           </span>
         </div>
-        <p className="text-sm text-slate-600 mb-2 line-clamp-2">{posting.description}</p>
+        <p className="text-sm text-slate-600 mb-2 line-clamp-2 min-h-[2.5rem]">{posting.description}</p>
         <div className="flex items-center gap-4 text-xs text-slate-400">
           <span>{posting.department}</span>
           <span aria-hidden="true">•</span>
@@ -69,7 +69,7 @@ export function JobPostingCard({ posting }: { posting: JobPosting }) {
       </div>
       <a
         href={`/career/${posting.slug}`}
-        className="inline-flex items-center justify-center rounded-xl bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
+        className="inline-flex w-full sm:w-[140px] shrink-0 self-stretch sm:self-center items-center justify-center whitespace-nowrap rounded-xl bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
       >
         View Details
       </a>
