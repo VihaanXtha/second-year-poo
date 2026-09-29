@@ -22,7 +22,10 @@ export default function Header() {
       <TopBar />
 
       {/* Layer 2 — main bar: logo / search / wishlist / cart / auth */}
-      <div className="border-b border-slate-100">
+      {/* relative z-40 + bg-white creates a solid stacking layer above the
+          category bar (z-30), so Brands / User dropdowns never get overlapped
+          by category text. */}
+      <div className="relative z-40 border-b border-slate-100 bg-white">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600">

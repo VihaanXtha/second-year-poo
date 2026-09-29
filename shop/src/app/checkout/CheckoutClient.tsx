@@ -3,6 +3,7 @@
 import { useEffect, useState, type ComponentType } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Banknote, CreditCard, Smartphone, Wallet } from "lucide-react";
 import { useAuth, isFullyVerified } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
@@ -40,9 +41,13 @@ export default function CheckoutClient() {
   const listSubtotal = items.reduce((sum, it) => sum + (it.originalPrice ?? it.price) * it.quantity, 0);
   const discountTotal = Math.round((listSubtotal - subtotal) * 100) / 100;
 
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
+  // Delivery fields are derived from the account profile during render.
+  // Each draft holds the user's edits (undefined = untouched, so fall back to
+  // the profile). This prefills the form once the profile hydrates without
+  // calling setState inside an effect (which causes cascading renders).
+  const [phoneDraft, setPhone] = useState<string | undefined>(undefined);
+  const [addressDraft, setAddress] = useState<string | undefined>(undefined);
+  const [cityDraft, setCity] = useState<string | undefined>(undefined);
   const [saveToProfile, setSaveToProfile] = useState(true);
   const [method, setMethod] = useState<Method>("cod");
   const [placing, setPlacing] = useState(false);
@@ -51,19 +56,17 @@ export default function CheckoutClient() {
   const [placed, setPlaced] = useState(false);
   const [error, setError] = useState("");
 
-  // Prefill the delivery block from the account profile once it hydrates.
-  useEffect(() => {
-    if (!user) return;
-    setPhone((v) => v || user.phone || "");
-    setCity((v) => v || user.city || user.district || "");
-    setAddress((v) => {
-      if (v) return v;
-      if (user.address) return user.address;
-      return [user.ward ? `Ward ${user.ward}` : "", user.municipality ?? "", user.district ?? ""]
-        .filter(Boolean)
-        .join(", ");
-    });
-  }, [user]);
+  const profilePhone = user?.phone ?? "";
+  const profileCity = user?.city ?? user?.district ?? "";
+  const profileAddress =
+    user?.address ??
+    [user?.ward ? `Ward ${user.ward}` : "", user?.municipality ?? "", user?.district ?? ""]
+      .filter(Boolean)
+      .join(", ");
+
+  const phone = phoneDraft ?? profilePhone;
+  const address = addressDraft ?? profileAddress;
+  const city = cityDraft ?? profileCity;
 
   // Guard: signed out -> login; signed in with an empty cart -> back to /cart.
   useEffect(() => {
@@ -301,9 +304,9 @@ export default function CheckoutClient() {
             <div className="mt-4 space-y-3 border-b border-slate-100 pb-4">
               {items.map((it) => (
                 <div key={it.productId} className="flex items-center gap-3">
-                  <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-slate-50">
+                  <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-slate-50">
                     {it.image ? (
-                      <img src={it.image} alt={it.name} className="h-full w-full object-contain" />
+                      <Image src={it.image} alt={it.name} fill sizes="48px" className="object-contain" />
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1">

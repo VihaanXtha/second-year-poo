@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Heart, LogOut, Package, Settings, UserCircle } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -17,10 +17,16 @@ export default function UserMenu() {
   const { user, isAuthenticated, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const [prevPathname, setPrevPathname] = useState(pathname);
 
-  useEffect(() => {
-    setOpen((prev) => (prev ? false : prev));
-  }, [pathname]); // close menu on route change
+  // Close menu on route change. Adjusting state during render for the new
+  // pathname avoids a cascading render from setState inside an effect.
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    if (open) {
+      setOpen(false);
+    }
+  }
 
   if (!isAuthenticated || !user) {
     return (
@@ -43,9 +49,7 @@ export default function UserMenu() {
         <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-red-500 to-red-700 text-xs font-bold text-white">
           {user.name?.charAt(0).toUpperCase()}
         </span>
-        <span className="hidden max-w-[110px] truncate text-sm font-medium text-slate-700 sm:block">
-          {user.name}
-        </span>
+        
       </button>
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-slate-100 bg-white py-2 shadow-xl animate-fade-in-down">
