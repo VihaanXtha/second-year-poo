@@ -112,7 +112,7 @@ export const SlideTabs = ({
               <a
                 href={tab.href}
                 onClick={() => onSelect?.(i)}
-                className={`${innerClassName} text-inherit hover:text-red-600 focus:text-inherit visited:text-inherit no-underline`}
+                className={`${innerClassName} text-inherit  no-underline`}
               >
                 {tab.label}
               </a>
@@ -120,7 +120,7 @@ export const SlideTabs = ({
               <Link
                 href={tab.href}
                 onClick={() => onSelect?.(i)}
-                className={`${innerClassName} text-inherit hover:text-red-600 focus:text-inherit visited:text-inherit no-underline`}
+                className={`${innerClassName} text-inherit  no-underline`}
               >
                 {tab.label}
               </Link>
@@ -132,7 +132,7 @@ export const SlideTabs = ({
                 onSelect?.(i);
                 tab.onClick?.();
               }}
-                                          className={`${innerClassName} text-inherit hover:text-red-600`}
+               className={`${innerClassName} text-inherit `}
             >
               {tab.label}
             </button>
