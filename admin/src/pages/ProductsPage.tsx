@@ -14,6 +14,8 @@ export const ProductsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => 
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [discountDraft, setDiscountDraft] = useState('0');
+  const [savingDiscount, setSavingDiscount] = useState(false);
   const itemsPerPage = 8;
 
   useEffect(() => {
@@ -56,6 +58,28 @@ export const ProductsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => 
     }
   };
 
+  useEffect(() => {
+    setDiscountDraft(String(selectedProduct?.discount_percent ?? 0));
+  }, [selectedProduct]);
+
+  const saveDiscount = async () => {
+    if (!selectedProduct) return;
+    setSavingDiscount(true);
+    try {
+      const value = Math.min(90, Math.max(0, Number(discountDraft) || 0));
+      const res = await apiFetch(`/admin/products/${selectedProduct.id}/discount`, {
+        method: 'PATCH',
+        body: JSON.stringify({ discount_percent: value }),
+      });
+      const updated = res.product as Product;
+      setProducts(prev => prev.map(p => (p.id === updated.id ? { ...p, ...updated } : p)));
+      setSelectedProduct(updated);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingDiscount(false);
+    }
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -161,10 +185,42 @@ export const ProductsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => 
             <div className="p-5 space-y-3">
               <p className="text-lg font-bold text-slate-900">{selectedProduct.name}</p>
               <p className="text-sm text-slate-500">SKU: {selectedProduct.sku}</p>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                  Discount %
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={90}
+                    value={discountDraft}
+                    onChange={(e) => setDiscountDraft(e.target.value)}
+                    className="w-24 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                  />
+                  <button
+                    onClick={saveDiscount}
+                    disabled={savingDiscount}
+                    className="px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  >
+                    {savingDiscount ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Price</p>
-                  <p className="font-bold text-primary">Rs. {Number(selectedProduct.price).toLocaleString()}</p>
+                  <p className="font-bold text-primary">
+                    {Number(selectedProduct.discount_percent) > 0 ? (
+                      <>
+                        <span className="text-slate-400 line-through">Rs. {Number(selectedProduct.price).toLocaleString()}</span>{' '}
+                        Rs. {Number(selectedProduct.final_price ?? selectedProduct.price).toLocaleString()}
+                        <span className="ml-1 text-xs font-bold text-rose-600">-{Number(selectedProduct.discount_percent)}%</span>
+                      </>
+                    ) : (
+                      <>Rs. {Number(selectedProduct.price).toLocaleString()}</>
+                    )}
+                  </p>
                 </div>
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Stock</p>

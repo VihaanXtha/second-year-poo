@@ -110,6 +110,8 @@ export interface Brand {
 }
 
 export interface Product {
+  discount_percent?: string | number;
+  final_price?: string | number;
   id: number;
   name: string;
   sku?: string;
@@ -129,6 +131,7 @@ export interface Product {
  * derived views don't have.
  */
 export interface ProductLike {
+  final_price?: string | number;
   id: number;
   name: string;
   price: string | number;
@@ -213,6 +216,13 @@ export async function getProducts(page = 1, perPage = 24) {
   return apiClient<PaginatedResponse<Product>>(`/products?${params.toString()}`);
 }
 
+/**
+ * The price the customer actually pays: the backend's final_price when a
+ * discount applies, the list price otherwise.
+ */
+export function effectivePrice(p: { price: string | number; final_price?: string | number }): number {
+  return Number(p.final_price ?? p.price);
+}
 export function formatPrice(price: string | number): string {
   return `Rs. ${Number(price).toLocaleString('en-IN')}`;
 }
@@ -224,6 +234,7 @@ export function formatPrice(price: string | number): string {
 // without a backend round-trip. `id` is the product id.
 
 export interface LocalCartItem {
+  originalPrice?: string | number;
   id: number;
   name: string;
   price: string | number;
@@ -426,6 +437,8 @@ export interface OrderItem {
 }
 
 export interface Order {
+  subtotal?: string | number;
+  discount_amount?: string | number;
   id: number;
   order_number: string;
   status: string;
@@ -447,5 +460,53 @@ export async function fetchOrders(page = 1): Promise<PaginatedResponse<Order>> {
 
 export async function fetchOrder(orderId: number): Promise<{ order: Order }> {
   return apiClient<{ order: Order }>(`/orders/${orderId}`);
+}
+
+
+export interface CreateOrderPayload {
+  items: { product_id: number; quantity: number }[];
+  shipping_address: string;
+  shipping_city: string;
+  shipping_phone: string;
+  payment_method: 'cod' | 'esewa' | 'khalti' | 'stripe';
+}
+
+export async function createOrder(payload: CreateOrderPayload): Promise<{ message: string; order: Order }> {
+  return apiClient<{ message: string; order: Order }>('/orders', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+/** What POST /payments/initiate/{order} returns per gateway. */
+export interface PaymentInitiateData {
+  method: string;
+  action?: string | null;
+  url?: string | null;
+  fields?: Record<string, string>;
+  session_id?: string | null;
+  payment_intent_id?: string | null;
+  pidx?: string | null;
+}
+
+export async function initiatePayment(
+  orderId: number,
+  method: CreateOrderPayload['payment_method']
+): Promise<{ message: string; payment_id: number; data: PaymentInitiateData }> {
+  return apiClient(`/payments/initiate/${orderId}`, {
+    method: 'POST',
+    body: JSON.stringify({ method }),
+  });
+}
+
+/** Confirm a returned Stripe Checkout Session against the backend. */
+export async function verifyStripePayment(
+  orderId: number,
+  sessionId: string
+): Promise<{ success: boolean; payment_status: string; status: string }> {
+  return apiClient('/payments/verify/stripe', {
+    method: 'POST',
+    body: JSON.stringify({ order_id: orderId, session_id: sessionId }),
+  });
 }
 

@@ -334,6 +334,16 @@ class AdminController extends Controller
         return response()->json(['message' => 'Featured flag updated.', 'featured' => $product->featured]);
     }
 
+    public function setProductDiscount(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'discount_percent' => ['required', 'numeric', 'min:0', 'max:90'],
+        ]);
+
+        $product->update($validated);
+
+        return response()->json(['message' => 'Discount updated.', 'product' => $product]);
+    }
     public function deleteProduct(Product $product)
     {
         $product->delete();

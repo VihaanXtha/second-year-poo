@@ -61,6 +61,8 @@ export interface Vendor {
 }
 
 export interface Product {
+  discount_percent?: number;
+  final_price?: number;
   id: number;
   name: string;
   sku: string;

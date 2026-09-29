@@ -11,9 +11,11 @@ class Order extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'order_number', 'status', 'total', 'payment_method', 'payment_status', 'shipping_address', 'shipping_city', 'shipping_phone'];
+    protected $fillable = ['user_id', 'order_number', 'status', 'subtotal', 'discount_amount', 'total', 'payment_method', 'payment_status', 'shipping_address', 'shipping_city', 'shipping_phone'];
 
     protected $casts = [
+        'subtotal' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'total' => 'decimal:2',
     ];
 

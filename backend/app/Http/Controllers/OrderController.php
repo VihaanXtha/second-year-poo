@@ -57,7 +57,8 @@ class OrderController extends Controller
             'payment_method' => ['required', 'in:esewa,khalti,cod,stripe'],
         ]);
 
-        $total = 0;
+        $originalTotal = 0; // sum of the products' list prices
+        $total = 0; // sum of the discounted prices — what the customer pays
         $orderItems = [];
 
         foreach ($validated['items'] as $item) {
@@ -67,30 +68,42 @@ class OrderController extends Controller
                 return response()->json(['message' => "Insufficient stock for {$product->name}."], 422);
             }
 
-            $subtotal = $product->price * $item['quantity'];
-            $total += $subtotal;
+            // final_price applies the product's discount_percent (see Product model).
+            $unitOriginal = (float) $product->price;
+            $unit = (float) $product->final_price;
+            $lineOriginal = $unitOriginal * $item['quantity'];
+            $lineTotal = $unit * $item['quantity'];
+
+            $originalTotal += $lineOriginal;
+            $total += $lineTotal;
 
             $orderItems[] = [
                 'product_id' => $product->id,
                 'vendor_store_id' => $product->vendor_store_id,
                 'product_name' => $product->name,
                 'product_sku' => $product->sku,
-                'unit_price' => $product->price,
+                'unit_price' => $unit,
                 'quantity' => $item['quantity'],
-                'subtotal' => $subtotal,
+                'subtotal' => $lineTotal,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
         }
 
-        DB::transaction(function () use ($validated, $total, $orderItems, &$order) {
+        $originalTotal = round($originalTotal, 2);
+        $total = round($total, 2);
+        $discountAmount = round($originalTotal - $total, 2);
+
+        DB::transaction(function () use ($validated, $originalTotal, $discountAmount, $total, $orderItems, &$order) {
             $order = Order::create([
                 'user_id' => Auth::id(),
                 'order_number' => 'ORD-'.strtoupper(Str::random(8)),
                 'status' => 'pending',
+                'subtotal' => $originalTotal,
+                'discount_amount' => $discountAmount,
                 'total' => $total,
                 'payment_method' => $validated['payment_method'],
-                'payment_status' => $validated['payment_method'] === 'cod' ? 'pending' : 'pending',
+                'payment_status' => 'pending',
                 'shipping_address' => $validated['shipping_address'],
                 'shipping_city' => $validated['shipping_city'],
                 'shipping_phone' => $validated['shipping_phone'],

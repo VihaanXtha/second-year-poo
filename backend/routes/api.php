@@ -64,8 +64,8 @@ Route::get('/brands', [App\Http\Controllers\Admin\BrandController::class, 'index
 Route::get('/faqs', [App\Http\Controllers\Admin\FaqController::class, 'index']);
 
 // Payment callbacks/webhooks (public - called by gateways)
-Route::post('/payments/callback/esewa', [PaymentController::class, 'callbackEsewa'])->name('payments.callback.esewa');
-Route::post('/payments/callback/khalti', [PaymentController::class, 'callbackKhalti'])->name('payments.callback.khalti');
+Route::match(['get', 'post'], '/payments/callback/esewa', [PaymentController::class, 'callbackEsewa'])->name('payments.callback.esewa');
+Route::match(['get', 'post'], '/payments/callback/khalti', [PaymentController::class, 'callbackKhalti'])->name('payments.callback.khalti');
 Route::post('/payments/webhook/stripe', [PaymentController::class, 'webhookStripe'])->name('payments.webhook.stripe');
 
 // Protected auth routes
@@ -84,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Payment initiation
     Route::post('/payments/initiate/{order}', [PaymentController::class, 'initiate']);
+Route::post('/payments/verify/stripe', [PaymentController::class, 'verifyStripe']);
 
     // Cart
     Route::get('/cart', [CartController::class, 'index']);
@@ -190,7 +191,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::post('/vendor-applications/{vendorApplication}/approve', [AdminController::class, 'approveVendor']);
     Route::post('/vendor-applications/{vendorApplication}/reject', [AdminController::class, 'rejectVendor']);
     Route::get('/products', [AdminController::class, 'products']);
-    Route::patch('/products/{product}/featured', [AdminController::class, 'toggleFeatured']);
+    Route::patch('/products/{product}/discount', [AdminController::class, 'setProductDiscount']);
+Route::patch('/products/{product}/featured', [AdminController::class, 'toggleFeatured']);
     Route::delete('/products/{product}', [AdminController::class, 'deleteProduct']);
     Route::get('/orders', [AdminController::class, 'orders']);
     Route::patch('/orders/{order}/status', [AdminController::class, 'updateOrderStatus']);

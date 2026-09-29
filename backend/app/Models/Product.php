@@ -11,12 +11,26 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['vendor_store_id', 'category_id', 'name', 'sku', 'description', 'price', 'stock', 'image', 'specs', 'status', 'featured'];
+    protected $fillable = ['vendor_store_id', 'category_id', 'name', 'sku', 'description', 'price', 'discount_percent', 'stock', 'image', 'specs', 'status', 'featured'];
 
     protected $casts = [
         'specs' => 'array',
         'featured' => 'boolean',
+        'discount_percent' => 'decimal:2',
     ];
+
+    /**
+     * Serialized alongside the original price so every consumer (shop lists,
+     * cart, checkout) can show the discounted price without doing the math.
+     */
+    protected $appends = ['final_price'];
+
+    public function getFinalPriceAttribute()
+    {
+        $discount = (float) ($this->attributes['discount_percent'] ?? 0);
+
+        return round(((float) $this->attributes['price']) * (1 - $discount / 100), 2);
+    }
 
     public function vendorStore(): BelongsTo
     {

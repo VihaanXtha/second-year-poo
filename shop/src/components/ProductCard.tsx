@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatPrice } from "@/lib/api";
+import { formatPrice, effectivePrice } from "@/lib/api";
 import type { Product } from "@/lib/api";
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -27,7 +27,17 @@ export default function ProductCard({ product }: { product: Product }) {
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900">
           {product.name}
         </h3>
-        <p className="font-mono text-sm font-bold text-red-600">{formatPrice(product.price)}</p>
+        <div className="flex flex-wrap items-baseline gap-2">
+          <p className="font-mono text-sm font-bold text-red-600">{formatPrice(effectivePrice(product))}</p>
+          {effectivePrice(product) < Number(product.price) && (
+            <>
+              <p className="font-mono text-xs text-slate-400 line-through">{formatPrice(product.price)}</p>
+              <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600">
+                -{Math.round((1 - effectivePrice(product) / Number(product.price)) * 100)}%
+              </span>
+            </>
+          )}
+        </div>
         {typeof product.total_sold === "number" && product.total_sold > 0 && (
           <p className="text-xs text-amber-600">{product.total_sold} sold</p>
         )}

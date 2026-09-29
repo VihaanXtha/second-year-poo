@@ -45,6 +45,27 @@ return [
         'from' => env('TWILIO_FROM'),
     ],
 
+    'esewa' => [
+        'merchant_id' => env('ESEWA_MERCHANT_ID'),
+        'secret_key' => env('ESEWA_SECRET_KEY'),
+        'base_url' => env('ESEWA_BASE_URL', 'https://rc.esewa.com.np'),
+    ],
+
+    'stripe' => [
+        'secret_key' => env('STRIPE_SECRET_KEY'),
+        'base_url' => env('STRIPE_BASE_URL', 'https://api.stripe.com'),
+    ],
+
+    // Sandbox default (dev.khalti.com); production uses https://khalti.com/api/v2.
+    'khalti' => [
+        'secret_key' => env('KHALTI_SECRET_KEY'),
+        'base_url' => env('KHALTI_BASE_URL', 'https://dev.khalti.com/api/v2'),
+    ],
+
+    // Origin the gateways redirect the browser back to after paying.
+    'shop' => [
+        'url' => env('SHOP_URL', 'http://localhost:3003'),
+    ],
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

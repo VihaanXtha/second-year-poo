@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth, isFullyVerified } from "@/context/AuthContext";
@@ -11,7 +11,11 @@ export default function CartClient() {
   const { items, loading, subtotal, count, removeItem, updateQuantity, clearCart } = useCart();
   const { isAuthenticated, user } = useAuth();
   const verified = isFullyVerified(user);
-  const [busy, setBusy] = useState(false);
+  const router = useRouter();
+
+  // List-price totals so the summary can show what the customer saved.
+  const listSubtotal = items.reduce((sum, it) => sum + (it.originalPrice ?? it.price) * it.quantity, 0);
+  const discountTotal = Math.round((listSubtotal - subtotal) * 100) / 100;
 
   async function handleCheckout() {
     if (!isAuthenticated) {
@@ -22,11 +26,7 @@ export default function CartClient() {
       window.alert("Please verify your email and phone before shopping.");
       return;
     }
-    setBusy(true);
-    // Checkout flow ships in a later prompt — this is a deliberate dead-end
-    // that keeps the button honest rather than pretending to work.
-    window.alert("Checkout arrives in an upcoming prompt. Your cart is saved.");
-    setBusy(false);
+    router.push("/checkout");
   }
 
   if (loading) {
@@ -94,7 +94,12 @@ export default function CartClient() {
                 <Link href={`/product/${item.productId}`} className="truncate text-sm font-semibold text-slate-900 hover:text-red-600">
                   {item.name}
                 </Link>
-                <p className="mt-1 font-mono text-sm font-bold text-red-600">{formatPrice(item.price)}</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="font-mono text-sm font-bold text-red-600">{formatPrice(item.price)}</p>
+                  {(item.originalPrice ?? item.price) > item.price && (
+                    <p className="font-mono text-xs text-slate-400 line-through">{formatPrice(item.originalPrice ?? item.price)}</p>
+                  )}
+                </div>
                 <div className="mt-auto flex items-center justify-between pt-3">
                   <div className="flex items-center rounded-lg border border-slate-200">
                     <button
@@ -136,11 +141,17 @@ export default function CartClient() {
             <dl className="mt-4 space-y-3 border-b border-slate-100 pb-4">
               <div className="flex justify-between text-sm text-slate-600">
                 <dt>Subtotal ({count} items)</dt>
-                <dd className="font-mono">{formatPrice(subtotal)}</dd>
+                <dd className="font-mono">{formatPrice(listSubtotal)}</dd>
               </div>
+              {discountTotal > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <dt>Discount</dt>
+                  <dd className="font-mono">&minus;{formatPrice(discountTotal)}</dd>
+                </div>
+              )}
               <div className="flex justify-between text-sm text-slate-600">
                 <dt>Shipping</dt>
-                <dd className="text-slate-400">Calculated at checkout</dd>
+                <dd className="font-medium text-green-600">Free</dd>
               </div>
             </dl>
             <div className="mt-4 flex justify-between text-base font-bold text-slate-900">
@@ -149,7 +160,7 @@ export default function CartClient() {
             </div>
             <button
               onClick={handleCheckout}
-              disabled={busy || !isAuthenticated || !verified}
+              disabled={!isAuthenticated || !verified}
               title={
                 !isAuthenticated
                   ? "Sign in to check out"

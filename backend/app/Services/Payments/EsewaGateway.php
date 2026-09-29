@@ -4,6 +4,7 @@ namespace App\Services\Payments;
 
 use App\Models\Order;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 
 class EsewaGateway implements PaymentGatewayInterface
 {
@@ -11,61 +12,102 @@ class EsewaGateway implements PaymentGatewayInterface
     {
         $secretKey = Config::get('services.esewa.secret_key');
         $merchantId = Config::get('services.esewa.merchant_id');
+        $baseUrl = rtrim((string) Config::get('services.esewa.base_url', 'https://rc.esewa.com.np'), '/');
 
-        $payload = [
-            'amount' => (string) $order->total,
-            'tax_amount' => '0',
-            'total_amount' => (string) $order->total,
+        $total = number_format((float) $order->total, 2, '.', '');
+
+        $fields = [
+            'amount' => $total,
+            'tax_amount' => '0.00',
+            'total_amount' => $total,
             'transaction_uuid' => $order->order_number,
-            'product_code' => $merchantId,
-            'product_service_charge' => '0',
-            'product_delivery_charge' => '0',
+            'product_code' => (string) $merchantId,
+            'product_service_charge' => '0.00',
+            'product_delivery_charge' => '0.00',
+            'signed_field_names' => 'total_amount,transaction_uuid,product_code',
         ];
 
-        $signed = base64_encode(json_encode($payload));
-        $signature = $this->sign($signed, $secretKey);
+        // eSewa v2: base64(HMAC-SHA256) over "k=v,k=v" in signed_field_names order.
+        $fields['signature'] = $this->sign($this->signedMessage($fields), $secretKey);
+
+        // The order number rides along so the callback can always resolve the
+        // order, even on the failure URL where eSewa sends no payload.
+        $callback = route('payments.callback.esewa');
+        $fields['success_url'] = $callback.'?status=success&order_number='.urlencode($order->order_number);
+        $fields['failure_url'] = $callback.'?status=failure&order_number='.urlencode($order->order_number);
 
         return [
             'method' => 'POST',
-            'action' => 'https://rc.esewa.com.np/api/epay/main/v2/form',
-            'fields' => [
-                'amount' => (string) $order->total,
-                'tax_amount' => '0',
-                'total_amount' => (string) $order->total,
-                'transaction_uuid' => $order->order_number,
-                'product_code' => $merchantId,
-                'product_service_charge' => '0',
-                'product_delivery_charge' => '0',
-                'signed_field_names' => 'total_amount,transaction_uuid,product_code',
-                'signature' => $signature,
-                'success_url' => route('payments.callback.esewa', ['status' => 'success']),
-                'failure_url' => route('payments.callback.esewa', ['status' => 'failure']),
-            ],
+            'action' => $baseUrl.'/api/epay/main/v2/form',
+            'fields' => $fields,
         ];
     }
 
     public function verify(array $callbackData): bool
     {
         $secretKey = Config::get('services.esewa.secret_key');
+        $merchantId = Config::get('services.esewa.merchant_id');
+        $baseUrl = rtrim((string) Config::get('services.esewa.base_url', 'https://rc.esewa.com.np'), '/');
 
-        if (! isset($callbackData['signature'], $callbackData['data'])) {
+        $decoded = json_decode(base64_decode((string) ($callbackData['data'] ?? '')), true);
+
+        if (! is_array($decoded) || ! isset($decoded['signature'], $decoded['signed_field_names'])) {
             return false;
         }
 
-        $receivedSignature = $callbackData['signature'];
-        $decodedData = json_decode(base64_decode($callbackData['data']), true);
-
-        if (! is_array($decodedData)) {
+        $expected = $this->sign($this->signedMessage($decoded), $secretKey);
+        if (! hash_equals($expected, (string) $decoded['signature'])) {
             return false;
         }
 
-        $computedSignature = $this->sign($callbackData['data'], $secretKey);
+        // eSewa requires a second confirmation against its transaction status API.
+        if (($decoded['status'] ?? '') !== 'COMPLETE') {
+            return false;
+        }
 
-        return hash_equals($computedSignature, $receivedSignature);
+        try {
+            $response = Http::get($baseUrl.'/api/epay/transaction/status/', [
+                'product_code' => $merchantId,
+                'total_amount' => $decoded['total_amount'] ?? '',
+                'transaction_uuid' => $decoded['transaction_uuid'] ?? '',
+            ]);
+
+            $body = $response->json();
+
+            return $response->successful()
+                && is_array($body)
+                && ($body['status'] ?? '') === 'COMPLETE';
+        } catch (\Throwable $e) {
+            report($e);
+
+            return false;
+        }
     }
 
-    private function sign(string $data, string $secretKey): string
+    /**
+     * Rebuild "k=v,k=v" from the signed_field_names order — used both when
+     * signing the outgoing form and when verifying eSewa's callback.
+     */
+    private function signedMessage(array $data): string
     {
-        return hash_hmac('sha256', $data, $secretKey);
+        $parts = [];
+
+        foreach (explode(',', (string) ($data['signed_field_names'] ?? '')) as $name) {
+            $name = trim($name);
+            if ($name === '') {
+                continue;
+            }
+            if (! array_key_exists($name, $data)) {
+                return '';
+            }
+            $parts[] = $name.'='.$data[$name];
+        }
+
+        return implode(',', $parts);
+    }
+
+    private function sign(string $message, string $secretKey): string
+    {
+        return base64_encode(hash_hmac('sha256', $message, (string) $secretKey, true));
     }
 }

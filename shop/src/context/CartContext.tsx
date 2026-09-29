@@ -37,9 +37,11 @@ import {
   type LocalCartItem,
   type CartItemResponse,
   type ProductLike,
+  effectivePrice,
 } from "@/lib/api";
 
 export interface CartLineItem {
+  originalPrice?: number; // list price when the line is discounted - `price` is what the customer pays
   lineId?: number; // backend cart_items.id — undefined for guest items
   productId: number;
   name: string;
@@ -67,6 +69,7 @@ function normalizeLocal(items: LocalCartItem[]): CartLineItem[] {
     productId: it.id,
     name: it.name,
     price: Number(it.price),
+    originalPrice: it.originalPrice != null ? Number(it.originalPrice) : undefined,
     image: it.image,
     quantity: it.quantity,
   }));
@@ -80,7 +83,8 @@ function normalizeRemote(items: CartItemResponse[]): CartLineItem[] {
 
 
     name: it.product.name,
-    price: Number(it.product.price),
+    price: effectivePrice(it.product),
+    originalPrice: Number(it.product.price) !== effectivePrice(it.product) ? Number(it.product.price) : undefined,
     image: it.product.image,
     quantity: it.quantity,
   }));
@@ -174,7 +178,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       cart.push({
         id: product.id,
         name: product.name,
-        price: product.price,
+        price: effectivePrice(product),
+        originalPrice: Number(product.price) !== effectivePrice(product) ? Number(product.price) : undefined,
         image: product.image,
         quantity,
       });

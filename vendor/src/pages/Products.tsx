@@ -21,6 +21,7 @@ interface ProductsProps {
 }
 
 interface ProductForm {
+  discount_percent: string;
   name: string;
   sku: string;
   description: string;
@@ -34,6 +35,7 @@ interface ProductForm {
 }
 
 const blankForm: ProductForm = {
+  discount_percent: '',
   name: '',
   sku: '',
   description: '',
@@ -135,6 +137,7 @@ export function Products({ apiFetch }: ProductsProps) {
       description: product.description || '',
       category: product.category || '',
       price: String(product.price ?? 0),
+      discount_percent: String(product.discount_percent ?? 0),
       stock: String(product.stock ?? 0),
       image: product.image || '',
       imagePreview: product.image || null,
@@ -157,6 +160,7 @@ export function Products({ apiFetch }: ProductsProps) {
         fd.append('category_id', categoryId);
         fd.append('price', String(Number(form.price) || 0));
         fd.append('stock', String(Number(form.stock) || 0));
+        fd.append('discount_percent', String(Number(form.discount_percent) || 0));
         fd.append('status', form.status);
         if (Object.keys(form.specs).length > 0) {
           fd.append('specs', JSON.stringify(form.specs));
@@ -182,6 +186,7 @@ export function Products({ apiFetch }: ProductsProps) {
           category_id: categoryId,
           price: Number(form.price) || 0,
           stock: Number(form.stock) || 0,
+          discount_percent: Number(form.discount_percent) || 0,
           status: form.status,
         };
         if (Object.keys(form.specs).length > 0) {
@@ -344,7 +349,15 @@ export function Products({ apiFetch }: ProductsProps) {
                     </td>
                     <td className="py-3 text-slate-500">{p.category || '—'}</td>
                     <td className="py-3 font-semibold text-slate-900">
-                      {formatCurrency(p.price)}
+                      {Number(p.discount_percent) > 0 ? (
+                        <span>
+                          <span className="text-slate-400 line-through">{formatCurrency(p.price)}</span>{' '}
+                          <span className="text-rose-600">{formatCurrency((Number(p.price) * (100 - Number(p.discount_percent))) / 100)}</span>
+                          <span className="ml-1 text-xs font-bold text-rose-600">-{Number(p.discount_percent)}%</span>
+                        </span>
+                      ) : (
+                        formatCurrency(p.price)
+                      )}
                     </td>
                     <td className="py-3">
                       <span
@@ -435,6 +448,12 @@ export function Products({ apiFetch }: ProductsProps) {
             prefix="$"
             value={form.price}
             onChange={(v) => setForm({ ...form, price: v })}
+          />          <TextField
+            label="Discount %"
+            type="number"
+            value={form.discount_percent}
+            onChange={(v) => setForm({ ...form, discount_percent: v })}
+            placeholder="0"
           />
           <TextField
             label="Stock"

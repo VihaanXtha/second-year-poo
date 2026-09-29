@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { ShoppingCart, Heart, Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ComingSoon from "@/components/ComingSoon";
-import { apiClient, formatPrice, type Product } from "@/lib/api";
+import { apiClient, formatPrice, effectivePrice, type Product } from "@/lib/api";
 import { useAuth, isFullyVerified } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -94,7 +94,17 @@ function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
         <div>
           {product.sku && <p className="font-mono text-xs text-slate-400">{product.sku}</p>}
           <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">{product.name}</h1>
-          <p className="mt-3 font-mono text-2xl font-bold text-red-600">{formatPrice(product.price)}</p>
+          <div className="mt-3 flex flex-wrap items-baseline gap-3">
+            <p className="font-mono text-2xl font-bold text-red-600">{formatPrice(effectivePrice(product))}</p>
+            {effectivePrice(product) < Number(product.price) && (
+              <>
+                <p className="font-mono text-lg text-slate-400 line-through">{formatPrice(product.price)}</p>
+                <span className="rounded-lg bg-red-50 px-2 py-1 text-xs font-bold text-red-600">
+                  -{Math.round((1 - effectivePrice(product) / Number(product.price)) * 100)}% OFF
+                </span>
+              </>
+            )}
+          </div>
           <p className="mt-2 text-sm text-slate-500">{product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}</p>
           {product.description && <p className="mt-4 text-sm leading-relaxed text-slate-600">{product.description}</p>}
           {product.category && (
