@@ -29,6 +29,7 @@ class OtpMail extends Mailable
                 'email_verification' => 'Verify Your Email - Circuit Bazaar',
                 'phone_verification' => 'Verify Your Phone - Circuit Bazaar',
                 'password_reset' => 'Reset Your Password - Circuit Bazaar',
+                'vendor_application' => 'Verify Your Vendor Application - Circuit Bazaar',
                 default => 'Your OTP Code - Circuit Bazaar',
             },
         );

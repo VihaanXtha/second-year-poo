@@ -21,6 +21,11 @@ export interface User {
   phone_verified: boolean;
 }
 
+/** True only when the customer cleared both OTP gates — required before shopping. */
+export function isFullyVerified(user: User | null): user is User {
+  return !!user && user.email_verified && user.phone_verified;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;

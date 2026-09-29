@@ -35,6 +35,10 @@ return [
         ],
     ],
 
+    'kusha' => [
+        'token' => env('KUSHA_SMS_TOKEN'),
+    ],
+
     'twilio' => [
         'sid' => env('TWILIO_SID'),
         'token' => env('TWILIO_TOKEN'),

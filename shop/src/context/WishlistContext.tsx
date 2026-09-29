@@ -25,7 +25,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, isFullyVerified } from "@/context/AuthContext";
 import {
   fetchWishlist,
   addToWishlist as apiAddToWishlist,
@@ -80,7 +80,8 @@ function normalizeRemote(items: WishlistItemResponse[]): WishlistItem[] {
 }
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const verified = isFullyVerified(user);
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const didInitialLoad = useRef(false);
@@ -221,13 +222,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items]);
 
-  // ----- public API -----
+  // ----- public API — login + full verification required before saving -----
+  // Guests and unverified accounts are no-ops so nothing is persisted.
   const addItem = useCallback(
     async (product: ProductLike) => {
-      if (isAuthenticated) await addRemote(product);
-      else addLocal(product);
+      if (!isAuthenticated || !verified) return;
+      await addRemote(product);
     },
-    [isAuthenticated, addRemote, addLocal]
+    [isAuthenticated, verified, addRemote]
   );
 
   const removeItem = useCallback(
@@ -240,10 +242,10 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
   const toggle = useCallback(
     async (product: ProductLike): Promise<boolean> => {
-      if (isAuthenticated) return toggleRemote(product);
-      return toggleLocal(product);
+      if (!isAuthenticated || !verified) return false;
+      return toggleRemote(product);
     },
-    [isAuthenticated, toggleRemote, toggleLocal]
+    [isAuthenticated, verified, toggleRemote]
   );
 
   const has = useCallback(

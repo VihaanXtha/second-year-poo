@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\OtpMail;
+use App\Models\GoogleAuthCode;
 use App\Models\OrderItem;
 use App\Models\OtpCode;
 use App\Models\Product;
@@ -22,12 +23,63 @@ class AuthController extends Controller
 {
     private const OTP_EXPIRY_MINUTES = 10;
 
+    /**
+     * Normalize a phone number to E.164 (+<country><number>, no spaces/dashes)
+     * so Twilio accepts it. Plain 10-digit Nepal mobiles gain the +977 prefix.
+     */
+    private function normalizePhone(?string $phone): ?string
+    {
+        if ($phone === null || $phone === '') {
+            return null;
+        }
+
+        $trimmed = trim($phone);
+
+        // Already E.164 (+97798...) — strip separators, keep the leading +.
+        if (str_starts_with($trimmed, '+')) {
+            $digits = preg_replace('/\D/', '', $trimmed);
+
+            return $digits === '' ? null : '+'.$digits;
+        }
+
+        $digits = preg_replace('/\D/', '', $trimmed);
+        if ($digits === '' || $digits === null) {
+            return null;
+        }
+
+        // Local 10-digit Nepal mobile (98XXXXXXXX / 97XXXXXXXX).
+        if (strlen($digits) === 10 && str_starts_with($digits, '9')) {
+            return '+977'.$digits;
+        }
+
+        // Local number with trunk zero (098XXXXXXXX) — drop the zero, add +977.
+        if (strlen($digits) === 11 && str_starts_with($digits, '0')) {
+            $withoutTrunk = substr($digits, 1);
+            if (strlen($withoutTrunk) === 10 && str_starts_with($withoutTrunk, '9')) {
+                return '+977'.$withoutTrunk;
+            }
+        }
+
+        // International number without + (e.g. 97798XXXXXXXX).
+        if (strlen($digits) > 10 && str_starts_with($digits, '977')) {
+            return '+'.$digits;
+        }
+
+        // Unknown shape — reject rather than guess a country.
+        return null;
+    }
+
+    /**
+     * How long the single-use code handed to /auth/callback stays redeemable.
+     */
+    private const GOOGLE_CODE_EXPIRY_MINUTES = 5;
+
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:20', 'unique:users,phone'],
+            'phone' => ['nullable', 'string', 'max:20', 'unique:users,phone', 'regex:/^\+?[0-9\s\-()]{7,20}$/'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'channel' => ['required', 'in:email,phone'],
             'address' => ['nullable', 'string', 'max:500'],
@@ -48,8 +100,12 @@ class AuthController extends Controller
                 $validator->errors()->add('email', 'Email is required when channel is email.');
             }
 
-            if ($request->channel === 'phone' && ! $hasPhone) {
-                $validator->errors()->add('phone', 'Phone is required when channel is phone.');
+            if ($request->channel === 'phone') {
+                if (! $hasPhone) {
+                    $validator->errors()->add('phone', 'Phone is required when channel is phone.');
+                } elseif (! $this->normalizePhone($request->phone)) {
+                    $validator->errors()->add('phone', 'Enter a valid phone number in E.164 format, e.g. +97798XXXXXXXX.');
+                }
             }
 
             if (! $hasEmail && ! $hasPhone) {
@@ -62,10 +118,15 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $normalizedPhone = $this->normalizePhone($request->phone);
+        if ($request->phone && ! $normalizedPhone) {
+            return response()->json(['errors' => ['phone' => ['Enter a valid phone number in E.164 format, e.g. +97798XXXXXXXX.']]], 422);
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'phone' => $request->phone,
+            'phone' => $normalizedPhone,
             'password' => Hash::make($request->password),
             'address' => $request->address,
             'city' => $request->city,
@@ -80,20 +141,33 @@ class AuthController extends Controller
         ]);
 
         if ($request->channel === 'email') {
-            $this->generateAndSendOtp($user->email, $user->id, 'email_verification');
+            try {
+                $this->generateAndSendOtp($user->email, $user->id, 'email_verification');
+            } catch (\Throwable $e) {
+                $user->delete();
+                report($e);
+
+                return response()->json(['message' => 'Could not send the verification email. Please try again.'], 502);
+            }
         } elseif ($request->channel === 'phone' && $user->phone) {
             $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
             OtpCode::create([
                 'user_id' => $user->id,
+                'email' => null,
                 'phone' => $user->phone,
                 'code' => $code,
                 'type' => 'phone_verification',
                 'expires_at' => Carbon::now()->addMinutes(self::OTP_EXPIRY_MINUTES),
             ]);
 
-            $sms = new SmsService;
-            $sms->sendOtp($user->phone, $code);
+            if (! (new SmsService)->sendOtp($user->phone, $code)) {
+                $user->delete();
+
+                return response()->json(['message' => 'Could not send the verification SMS. Please check the number and try again.'], 502);
+            }
+
+            $otp = $code;
         }
 
         return response()->json([
@@ -407,18 +481,19 @@ class AuthController extends Controller
 
     public function googleRedirect(Request $request)
     {
-        $request->session()->put('google_auth_redirect_url', $request->input('redirect_to'));
+        $request->session()->put('google_auth_redirect_url', $this->googleReturnOrigin($request->input('redirect_to')));
 
         return Socialite::driver('google')->redirect();
     }
 
     public function googleCallback(Request $request)
     {
+        $origin = $request->session()->pull('google_auth_redirect_url') ?? $this->googleReturnOrigin(null);
+
         try {
             $googleUser = Socialite::driver('google')->user();
         } catch (\Throwable $e) {
-            $redirectUrl = $request->session()->pull('google_auth_redirect_url', null) ?? env('APP_URL');
-            return redirect($redirectUrl.'?error=google_auth_failed');
+            return redirect($origin.'/auth/callback?error=google_auth_failed');
         }
 
         $user = User::where('google_id', $googleUser->getId())
@@ -438,23 +513,84 @@ class AuthController extends Controller
             $user->update(['google_id' => $googleUser->getId()]);
         }
 
-        $isNew = ! $user->phone_verified_at && ! $user->address;
+        // Hand the browser a single-use code rather than the token itself: the
+        // callback page POSTs it to /auth/google/exchange, so the credential
+        // never lands in browser history, access logs or Referer headers.
+        $code = bin2hex(random_bytes(32));
 
-        if ($isNew || ! $user->phone_verified_at) {
-            $token = $user->createToken('auth_token')->plainTextToken;
-            $redirectUrl = $request->session()->pull('google_auth_redirect_url', null) ?? env('APP_URL');
-            
-            if ($isNew) {
-                return redirect("{$redirectUrl}?token={$token}&user_id={$user->id}&requires_profile_completion=1");
-            }
-            
-            return redirect("{$redirectUrl}?token={$token}&user_id={$user->id}&requires_phone_verification=1");
+        GoogleAuthCode::create([
+            'code_hash' => hash('sha256', $code),
+            'user_id' => $user->id,
+            'requires_profile_completion' => ! $user->phone_verified_at || ! $user->address,
+            'requires_phone_verification' => ! $user->phone_verified_at,
+            'expires_at' => now()->addMinutes(self::GOOGLE_CODE_EXPIRY_MINUTES),
+        ]);
+
+        return redirect("{$origin}/auth/callback?code={$code}");
+    }
+
+    public function googleExchange(Request $request)
+    {
+        $validated = Validator::make($request->all(), [
+            'code' => ['required', 'string'],
+        ])->validate();
+
+        $record = GoogleAuthCode::where('code_hash', hash('sha256', $validated['code']))
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (! $record) {
+            return response()->json(['message' => 'This sign-in link has expired. Please try again.'], 422);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-        $redirectUrl = $request->session()->pull('google_auth_redirect_url', null) ?? env('APP_URL');
+        // Single use: burn the code before anything is handed back.
+        $record->update(['used_at' => now()]);
 
-        return redirect("{$redirectUrl}?token={$token}&user_id={$user->id}");
+        $user = $record->user;
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'address' => $user->address,
+                'city' => $user->city,
+                'postal_code' => $user->postal_code,
+                'country' => $user->country,
+                'email_verified' => ! is_null($user->email_verified_at),
+                'phone_verified' => ! is_null($user->phone_verified_at),
+            ],
+            'token' => $token,
+            'requires_profile_completion' => (bool) $record->requires_profile_completion,
+            'requires_phone_verification' => (bool) $record->requires_phone_verification,
+        ]);
+    }
+
+    /**
+     * Origins the Google round-trip may return to. The browser only ever sends
+     * an origin (never a path), so a whitelist keeps this from becoming an open
+     * redirect; anything unrecognised falls back to the shop.
+     */
+    private function googleReturnOrigin(?string $origin): string
+    {
+        $allowed = array_values(array_filter((array) config('cors.allowed_origins', [])));
+        $origin = $origin ? rtrim($origin, '/') : null;
+
+        if ($origin && in_array($origin, $allowed, true)) {
+            return $origin;
+        }
+
+        foreach ($allowed as $candidate) {
+            if (str_contains($candidate, ':3003')) {
+                return $candidate;
+            }
+        }
+
+        return $allowed[0] ?? rtrim((string) config('app.url'), '/');
     }
 
     public function vendorLogin(Request $request)
@@ -713,10 +849,18 @@ class AuthController extends Controller
 
         // Email is used as the account identity and cannot be changed here;
         // everything else is fair game.
-        $user->update($request->only([
+        $data = $request->only([
             'name', 'phone', 'address', 'city', 'province',
             'district', 'municipality', 'ward', 'postal_code', 'country',
-        ]));
+        ]);
+
+        // A changed phone number has never been verified — clear the flag so
+        // the account has to run the OTP flow again for the new number.
+        if (array_key_exists('phone', $data) && $data['phone'] !== $user->phone) {
+            $user->phone_verified_at = null;
+        }
+
+        $user->update($data);
 
         return response()->json([
             'message' => 'Profile updated successfully.',

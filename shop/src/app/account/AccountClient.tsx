@@ -1,19 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { NepalAddressPicker, AddressValue } from "@/components/NepalAddressPicker";
 import { BadgeCheck, MailCheck, Pencil, Save, X } from "lucide-react";
 import Link from "next/link";
 
 export default function AccountClient() {
-  const { user, isAuthenticated, updateProfile, fetchProfile } = useAuth();
+  const { user, isAuthenticated, updateProfile, fetchProfile, resendOtp, sendPhoneOtp } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState<"email" | "phone" | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // `?verified=email|phone` comes back from the OTP page as a one-shot flash
+  // confirming the verification just completed.
+  const verified = searchParams.get("verified");
+  const flash =
+    verified === "email"
+      ? "Email verified successfully."
+      : verified === "phone"
+        ? "Phone number verified successfully."
+        : "";
 
   const [name, setName] = useState(() => user?.name ?? "");
   const [phone, setPhone] = useState(() => user?.phone ?? "");
@@ -41,6 +53,15 @@ export default function AccountClient() {
       router.push("/login?redirect=/account");
     }
   }, [isAuthenticated, router]);
+
+  // Drop the flash param once it has had time to render, so a refresh or the
+  // back button doesn't replay the banner forever. No setState here — the
+  // banner is derived from the search param during render.
+  useEffect(() => {
+    if (!verified) return;
+    const t = setTimeout(() => router.replace("/account"), 4000);
+    return () => clearTimeout(t);
+  }, [verified, router]);
 
   if (!isAuthenticated || !user) {
     return (
@@ -80,6 +101,34 @@ export default function AccountClient() {
   const field =
     "w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-red-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500";
 
+  // Send an OTP for the unverified email, then hand off to the OTP page.
+  const handleVerifyEmail = async () => {
+    setError("");
+    setSending("email");
+    try {
+      await resendOtp(user.email, "email_verification");
+      router.push("/verify-otp?type=email");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send verification OTP");
+    } finally {
+      setSending(null);
+    }
+  };
+
+  // Send an SMS OTP to the saved phone number, then hand off to the OTP page.
+  const handleVerifyPhone = async () => {
+    setError("");
+    setSending("phone");
+    try {
+      await sendPhoneOtp(user.id);
+      router.push("/verify-otp?type=phone");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send verification OTP");
+    } finally {
+      setSending(null);
+    }
+  };
+
   const addressLine = [user.ward && `Ward ${user.ward}`, user.municipality, user.district, user.province]
     .filter(Boolean)
     .join(", ");
@@ -107,9 +156,9 @@ export default function AccountClient() {
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
-      {success && (
+      {(success || flash) && (
         <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4">
-          <p className="text-sm text-green-700">{success}</p>
+          <p className="text-sm text-green-700">{success || flash}</p>
         </div>
       )}
 
@@ -132,7 +181,17 @@ export default function AccountClient() {
                   Verified
                 </span>
               ) : (
-                <span className="flex-shrink-0 rounded-lg bg-amber-50 px-2 py-1.5 text-xs font-medium text-amber-700">Unverified</span>
+                <span className="flex flex-shrink-0 items-center gap-2">
+                  <span className="rounded-lg bg-amber-50 px-2 py-1.5 text-xs font-medium text-amber-700">Unverified</span>
+                  <button
+                    type="button"
+                    onClick={handleVerifyEmail}
+                    disabled={sending !== null}
+                    className="flex-shrink-0 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {sending === "email" ? "Sending..." : "Verify"}
+                  </button>
+                </span>
               )}
             </div>
             <p className="mt-1 text-xs text-slate-400">Email is your sign-in identity and can&apos;t be changed.</p>
@@ -156,7 +215,17 @@ export default function AccountClient() {
                   Verified
                 </span>
               ) : user.phone ? (
-                <span className="flex-shrink-0 rounded-lg bg-amber-50 px-2 py-1.5 text-xs font-medium text-amber-700">Unverified</span>
+                <span className="flex flex-shrink-0 items-center gap-2">
+                  <span className="rounded-lg bg-amber-50 px-2 py-1.5 text-xs font-medium text-amber-700">Unverified</span>
+                  <button
+                    type="button"
+                    onClick={handleVerifyPhone}
+                    disabled={sending !== null}
+                    className="flex-shrink-0 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {sending === "phone" ? "Sending..." : "Verify"}
+                  </button>
+                </span>
               ) : null}
             </div>
           </div>

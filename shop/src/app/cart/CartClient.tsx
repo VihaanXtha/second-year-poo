@@ -4,13 +4,24 @@ import Link from "next/link";
 import { useState } from "react";
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useAuth, isFullyVerified } from "@/context/AuthContext";
 import { formatPrice } from "@/lib/api";
 
 export default function CartClient() {
   const { items, loading, subtotal, count, removeItem, updateQuantity, clearCart } = useCart();
+  const { isAuthenticated, user } = useAuth();
+  const verified = isFullyVerified(user);
   const [busy, setBusy] = useState(false);
 
   async function handleCheckout() {
+    if (!isAuthenticated) {
+      window.alert("Please sign in or create an account to check out.");
+      return;
+    }
+    if (!verified) {
+      window.alert("Please verify your email and phone before shopping.");
+      return;
+    }
     setBusy(true);
     // Checkout flow ships in a later prompt — this is a deliberate dead-end
     // that keeps the button honest rather than pretending to work.
@@ -32,8 +43,12 @@ export default function CartClient() {
         <ShoppingBag className="text-5xl text-slate-300" />
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">Your cart is empty</h1>
         <p className="mt-2 max-w-sm text-sm text-slate-500">
-          Browse the store and add items — they will show up here. Guest carts are saved to your
-          device and merge into your account when you sign in.
+          Browse the store and add items — they will show up here.{" "}
+          {!isAuthenticated
+            ? "Sign in or create an account to save items to your cart."
+            : !verified
+              ? "Verify your email and phone to start shopping."
+              : "Your cart is saved to your account."}
         </p>
         <Link
           href="/"
@@ -134,7 +149,14 @@ export default function CartClient() {
             </div>
             <button
               onClick={handleCheckout}
-              disabled={busy}
+              disabled={busy || !isAuthenticated || !verified}
+              title={
+                !isAuthenticated
+                  ? "Sign in to check out"
+                  : !verified
+                    ? "Verify your email and phone to check out"
+                    : undefined
+              }
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
             >
               Proceed to Checkout

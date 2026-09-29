@@ -24,7 +24,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, isFullyVerified } from "@/context/AuthContext";
 import {
   fetchCart,
   addToCart as apiAddToCart,
@@ -87,13 +87,16 @@ function normalizeRemote(items: CartItemResponse[]): CartLineItem[] {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const verified = isFullyVerified(user);
   const [items, setItems] = useState<CartLineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const didInitialLoad = useRef(false);
   const prevAuthRef = useRef<boolean | null>(null);
 
   // ----- load from the correct source -----
+  // Cart is only persisted for logged-in, fully-verified customers. Guests and
+  // unverified accounts always see an empty cart so nothing is saved locally.
   const loadFromBackend = useCallback(async () => {
     setLoading(true);
     try {
@@ -261,13 +264,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems([]);
   }, []);
 
-  // ----- public API -----
+  // ----- public API — login + full verification required before saving -----
+  // Guests and unverified accounts are no-ops so nothing is persisted.
   const addItem = useCallback(
     async (product: ProductLike, quantity = 1) => {
-      if (isAuthenticated) await addRemote(product, quantity);
-      else addLocal(product, quantity);
+      if (!isAuthenticated || !verified) return;
+      await addRemote(product, quantity);
     },
-    [isAuthenticated, addRemote, addLocal]
+    [isAuthenticated, verified, addRemote]
   );
 
   const removeItem = useCallback(

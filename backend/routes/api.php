@@ -40,6 +40,9 @@ Route::middleware('web')->group(function () {
     Route::get('/auth/google/redirect', [AuthController::class, 'googleRedirect'])->middleware('throttle:10,1');
     Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])->middleware('throttle:10,1');
 });
+// Stateless JSON swap of the single-use OAuth code for a Sanctum token; lives
+// outside the `web` group because the SPA POSTs it cross-origin with no session.
+Route::post('/auth/google/exchange', [AuthController::class, 'googleExchange'])->middleware('throttle:10,1');
 Route::post('/auth/vendor-login', [AuthController::class, 'vendorLogin'])->middleware('throttle:10,1');
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
 Route::post('/auth/verify-reset-otp', [AuthController::class, 'verifyResetOtp'])->middleware('throttle:5,1');

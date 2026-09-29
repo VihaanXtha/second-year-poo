@@ -4,11 +4,14 @@ import Link from "next/link";
 import { Heart, ShoppingCart, Trash2 } from "lucide-react";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
+import { useAuth, isFullyVerified } from "@/context/AuthContext";
 import { formatPrice } from "@/lib/api";
 
 export default function WishlistClient() {
   const { items, loading, count, removeItem, toggle } = useWishlist();
   const { addItem } = useCart();
+  const { isAuthenticated, user } = useAuth();
+  const verified = isFullyVerified(user);
 
   if (loading) {
     return (
@@ -24,8 +27,11 @@ export default function WishlistClient() {
         <Heart className="text-5xl text-slate-300" />
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">Your wishlist is empty</h1>
         <p className="mt-2 max-w-sm text-sm text-slate-500">
-          Tap the heart on any product to save it here. Saved items are kept on your device as a
-          guest and merge into your account when you sign in.
+          {!isAuthenticated
+            ? "Sign in or create an account to save items to your wishlist."
+            : !verified
+              ? "Verify your email and phone before saving items."
+              : "Tap the heart on any product to save it here."}
         </p>
         <Link
           href="/"

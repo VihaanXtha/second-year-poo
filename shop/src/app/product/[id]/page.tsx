@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ShoppingCart, Heart, Minus, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import ComingSoon from "@/components/ComingSoon";
 import { apiClient, formatPrice, type Product } from "@/lib/api";
+import { useAuth, isFullyVerified } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 
@@ -23,8 +25,12 @@ function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const [error, setError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+  const [gateMessage, setGateMessage] = useState("");
+  const { user, isAuthenticated } = useAuth();
+  const verified = isFullyVerified(user);
   const { addItem } = useCart();
   const { toggle, has } = useWishlist();
+  const router = useRouter();
 
   useEffect(() => {
     params.then((p) => setId(p.id)).catch(() => setError(true));
@@ -43,10 +49,36 @@ function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const wishlisted = has(product.id);
 
   async function handleAddToCart() {
+    if (!isAuthenticated) {
+      setGateMessage("Please sign in or create an account to add items to your cart.");
+      router.push("/login");
+      return;
+    }
+    if (!verified) {
+      setGateMessage("Please verify your email and phone before shopping.");
+      router.push("/register");
+      return;
+    }
+    setGateMessage("");
     await addItem(product!, quantity);
     setJustAdded(true);
     setQuantity(1);
     setTimeout(() => setJustAdded(false), 1500);
+  }
+
+  async function handleToggleWishlist() {
+    if (!isAuthenticated) {
+      setGateMessage("Please sign in or create an account to save items to your wishlist.");
+      router.push("/login");
+      return;
+    }
+    if (!verified) {
+      setGateMessage("Please verify your email and phone before saving items.");
+      router.push("/register");
+      return;
+    }
+    setGateMessage("");
+    await toggle(product!);
   }
 
   return (
@@ -72,6 +104,11 @@ function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
           )}
 
           {/* Actions */}
+          {gateMessage && (
+            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+              {gateMessage}
+            </p>
+          )}
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <div className="flex items-center rounded-lg border border-slate-200">
               <button
@@ -101,7 +138,7 @@ function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
             </button>
 
             <button
-              onClick={() => toggle(product)}
+              onClick={handleToggleWishlist}
               aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
               aria-pressed={wishlisted}
               className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
