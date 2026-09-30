@@ -16,6 +16,8 @@ Double-click `start.bat` in the project root. This launches all 5 services in se
 
 **Admin login:** admin@circuitbazaar.com / admin123
 
+One Gmail can hold up to three separate accounts — one per space: **customer** (shop/frontend), **vendor** (vendor portal), **admin** (this panel) — all linked by the shared email. Each space has its own password; Google sign-in always lands in the customer space.
+
 ## Local Development (Manual)
 
 Run each service in its own terminal:

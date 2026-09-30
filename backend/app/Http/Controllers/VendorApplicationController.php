@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class VendorApplicationController extends Controller
@@ -18,7 +19,9 @@ class VendorApplicationController extends Controller
     {
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            // Only an existing vendor account blocks a new application — a
+            // person whose email is already a customer/admin can still apply.
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->where('role', 'vendor')],
             'phone' => ['nullable', 'string', 'max:20'],
             'store_name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],

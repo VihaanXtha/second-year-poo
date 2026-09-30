@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Events\OrderStatusUpdated;
 use App\Models\Category;
+use App\Models\SubCategory;
+use App\Models\SuperSubCategory;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -181,15 +183,40 @@ class VendorController extends Controller
             });
         }
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('sub_category_id')) {
+            $query->where('sub_category_id', $request->sub_category_id);
+        }
+
+        if ($request->filled('super_sub_category_id')) {
+            $query->where('super_sub_category_id', $request->super_sub_category_id);
+        }
+
+        if ($request->filled('status')) {
+            // "inactive" groups every non-active status (draft, out_of_stock).
+            if ($request->status === 'inactive') {
+                $query->where('status', '!=', 'active');
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         $products = $query->latest()->paginate(20);
 
         $products->getCollection()->transform(function ($product) {
-            $product->category = $product->category?->name ?? $product->category;
-            $product->category_id = $product->category_id ?? $product->category?->id;
+            // The frontend expects the category *name* (string) plus its id.
+            // The loaded relation must be dropped first, otherwise it keeps
+            // overriding the name during JSON serialization (the table would
+            // receive an object and React would refuse to render it).
+            $categoryName = $product->category?->name;
+            $categoryId = $product->category_id ?? $product->category?->id;
+
+            $product->unsetRelation('category');
+            $product->setAttribute('category', $categoryName);
+            $product->setAttribute('category_id', $categoryId);
 
             return $product;
         });
@@ -215,6 +242,8 @@ class VendorController extends Controller
         $validated = $request->validate([
             'category' => ['required_without:category_id', 'string', 'max:255'],
             'category_id' => ['required_without:category', 'exists:categories,id'],
+            'sub_category_id' => ['nullable', 'exists:sub_categories,id'],
+            'super_sub_category_id' => ['nullable', 'exists:super_sub_categories,id'],
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -239,6 +268,15 @@ class VendorController extends Controller
             $validated['sku'] = 'SKU-'.strtoupper(substr(md5($validated['name'].microtime(true)), 0, 8));
         }
         unset($validated['category']);
+
+        $taxonomyError = $this->taxonomyError(
+            $validated['category_id'],
+            $validated['sub_category_id'] ?? null,
+            $validated['super_sub_category_id'] ?? null
+        );
+        if ($taxonomyError) {
+            return response()->json(['message' => $taxonomyError], 422);
+        }
 
         $category = Category::findOrFail($validated['category_id']);
         $specErrors = $this->validateSpecs($request->input('specs', []), $category->spec_schema);
@@ -302,6 +340,8 @@ class VendorController extends Controller
         $validated = $request->validate([
             'category' => ['sometimes', 'string', 'max:255'],
             'category_id' => ['sometimes', 'exists:categories,id'],
+            'sub_category_id' => ['sometimes', 'nullable', 'exists:sub_categories,id'],
+            'super_sub_category_id' => ['sometimes', 'nullable', 'exists:super_sub_categories,id'],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'sku' => ['sometimes', 'nullable', 'string', 'max:100', 'unique:products,sku,'.$product->id],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -322,6 +362,15 @@ class VendorController extends Controller
             }
         }
         unset($validated['category']);
+
+        $taxonomyError = $this->taxonomyError(
+            $validated['category_id'] ?? $product->category_id,
+            array_key_exists('sub_category_id', $validated) ? $validated['sub_category_id'] : $product->sub_category_id,
+            array_key_exists('super_sub_category_id', $validated) ? $validated['super_sub_category_id'] : $product->super_sub_category_id
+        );
+        if ($taxonomyError) {
+            return response()->json(['message' => $taxonomyError], 422);
+        }
 
         $category = empty($validated['category_id'] ?? null)
             ? $product->category
@@ -363,6 +412,32 @@ class VendorController extends Controller
         }
 
         return response()->json(['message' => 'Product updated.', 'product' => $product]);
+    }
+
+    /**
+     * Validate the category → sub category → super sub category chain and
+     * return an error message when the picked values contradict the tree
+     * (e.g. a sub category from a different category, or a super without
+     * its parent sub).
+     */
+    private function taxonomyError(?int $categoryId, ?int $subCategoryId, ?int $superSubCategoryId): ?string
+    {
+        if ($subCategoryId && $categoryId
+            && ! SubCategory::where('id', $subCategoryId)->where('category_id', $categoryId)->exists()) {
+            return 'Sub category does not belong to the selected category.';
+        }
+
+        if ($superSubCategoryId) {
+            if (! $subCategoryId) {
+                return 'Select a sub category before a super sub category.';
+            }
+
+            if (! SuperSubCategory::where('id', $superSubCategoryId)->where('sub_category_id', $subCategoryId)->exists()) {
+                return 'Super sub category does not belong to the selected sub category.';
+            }
+        }
+
+        return null;
     }
 
     public function deleteProduct(Product $product)

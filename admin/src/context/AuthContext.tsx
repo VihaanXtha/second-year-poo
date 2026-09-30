@@ -45,7 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      // role=admin resolves the admin *persona*: the same email may also hold
+      // separate customer/vendor accounts that must not be signed into here.
+      body: JSON.stringify({ email, password, role: 'admin' }),
     });
 
     const data = await res.json();

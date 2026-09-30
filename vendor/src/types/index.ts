@@ -1,8 +1,24 @@
+export interface SuperSubCategory {
+  id: number;
+  sub_category_id: number;
+  name: string;
+  slug: string;
+}
+
+export interface SubCategory {
+  id: number;
+  category_id: number;
+  name: string;
+  slug: string;
+  super_sub_categories?: SuperSubCategory[];
+}
+
 export interface Category {
   id: number;
   name: string;
   slug: string;
   spec_schema?: CategorySpecField[];
+  sub_categories?: SubCategory[];
 }
 
 export interface CategorySpecField {
@@ -29,6 +45,9 @@ export interface Product {
   price: number;
   stock: number;
   category: string;
+  category_id?: number | null;
+  sub_category_id?: number | null;
+  super_sub_category_id?: number | null;
   image?: string;
   specs?: Record<string, unknown>;
   status?: 'active' | 'draft' | 'out_of_stock';

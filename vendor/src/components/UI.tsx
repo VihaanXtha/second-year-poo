@@ -209,15 +209,17 @@ export function SelectField({
   onChange,
   options,
   required,
+  disabled,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
   required?: boolean;
+  disabled?: boolean;
 }) {
   return (
-    <label className="block">
+    <label className={`block ${disabled ? 'opacity-60' : ''}`}>
       <span className="mb-1 block text-sm font-medium text-slate-700">
         {label}
         {required && <span className="ml-1 text-red-600">*</span>}
@@ -226,7 +228,8 @@ export function SelectField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100"
+        disabled={disabled}
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-100"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

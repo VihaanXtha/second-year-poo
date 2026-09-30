@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Eye, X, Store, Check, XCircle, UserPlus, Pencil } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, Eye, X, Store, Check, XCircle, UserPlus, Pencil, Package } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
 
@@ -15,6 +15,7 @@ interface VendorData {
   status: string;
   created_at: string;
   store_name?: string;
+  store_id?: number;
   products_count?: number;
   total_sales?: number;
   description?: string;
@@ -42,6 +43,7 @@ interface VendorApplication {
   id: number;
   user_id: number;
   store_name: string;
+  full_name?: string;
   description?: string;
   address?: string;
   phone?: string;
@@ -57,76 +59,151 @@ interface VendorApplication {
   };
 }
 
+interface VendorProduct {
+  id: number;
+  name: string;
+  price: number;
+  status: string;
+}
+
+interface AppCounts {
+  pending: number;
+  verified: number;
+  approved: number;
+  rejected: number;
+}
+
+type AppTab = 'pending' | 'verified' | 'approved' | 'rejected';
+
+const APP_TABS: AppTab[] = ['pending', 'verified', 'approved', 'rejected'];
+
+const STATUS_BADGE: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700',
+  verified: 'bg-blue-100 text-blue-700',
+  approved: 'bg-green-100 text-green-700',
+  rejected: 'bg-red-100 text-red-700',
+};
+
 export const VendorsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
   const [vendors, setVendors] = useState<VendorData[]>([]);
+  const [pager, setPager] = useState({ current_page: 1, last_page: 1, per_page: 8, total: 0 });
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState('All');
   const [loading, setLoading] = useState(true);
   const [selectedVendor, setSelectedVendor] = useState<VendorData | null>(null);
+  const [vendorProducts, setVendorProducts] = useState<VendorProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<VendorApplication | null>(null);
   const [editingApplication, setEditingApplication] = useState<VendorApplication | null>(null);
   const [editForm, setEditForm] = useState({ store_name: '', description: '', address: '', phone: '' });
+  const [appError, setAppError] = useState('');
   const [applications, setApplications] = useState<VendorApplication[]>([]);
-  const [applicationsCount, setApplicationsCount] = useState(0);
+  const [appCounts, setAppCounts] = useState<AppCounts>({ pending: 0, verified: 0, approved: 0, rejected: 0 });
+  const [appTab, setAppTab] = useState<AppTab>('pending');
   const [loadingApps, setLoadingApps] = useState(false);
   const [showApplications, setShowApplications] = useState(false);
   const itemsPerPage = 8;
 
-  const loadVendors = async () => {
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 400);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [searchQuery]);
+
+  // Each vendor login owns its own store portfolio — pull store-scoped rows so
+  // every row shows that vendor's own products/sales, never a blended view.
+  const loadVendors = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (searchQuery) params.set('search', searchQuery);
-      params.set('role', 'vendor');
-      const data = await apiFetch(`/admin/users?${params.toString()}`);
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      if (statusFilter !== 'All') params.set('status', statusFilter.toLowerCase());
+      params.set('page', String(currentPage));
+      params.set('per_page', String(itemsPerPage));
+      const data = await apiFetch(`/admin/vendors?${params.toString()}`);
       setVendors(data.data || []);
-      setCurrentPage(1);
+      setPager({
+        current_page: data.current_page || 1,
+        last_page: Math.max(data.last_page || 1, 1),
+        per_page: data.per_page || itemsPerPage,
+        total: data.total || 0,
+      });
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [apiFetch, debouncedSearch, statusFilter, currentPage]);
 
-  const loadApplications = async () => {
+  // The applications box is for pending decisions only — approved vendors must
+  // not show up again. History lives under the Approved/Rejected tabs.
+  const loadApplications = useCallback(async (tab: AppTab) => {
     setLoadingApps(true);
     try {
-      const data = await apiFetch('/admin/vendor-applications');
+      const data = await apiFetch(`/admin/vendor-applications?status=${tab}&per_page=50`);
       setApplications(data.data || []);
-      setApplicationsCount(data.data?.length || 0);
+      setAppCounts({
+        pending: data.counts?.pending || 0,
+        verified: data.counts?.verified || 0,
+        approved: data.counts?.approved || 0,
+        rejected: data.counts?.rejected || 0,
+      });
     } catch (e) {
       console.error(e);
     } finally {
       setLoadingApps(false);
     }
-  };
+  }, [apiFetch]);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       await loadVendors();
-      await loadApplications();
       setLoading(false);
     };
     load();
-  }, [apiFetch, searchQuery]);
+  }, [loadVendors]);
+
+  useEffect(() => {
+    if (showApplications) loadApplications(appTab);
+  }, [showApplications, appTab, loadApplications]);
+
+  const openVendor = (vendor: VendorData) => {
+    setSelectedVendor(vendor);
+    setVendorProducts([]);
+    if (vendor.store_id) {
+      setLoadingProducts(true);
+      apiFetch(`/admin/products?vendor_store_id=${vendor.store_id}&per_page=50`)
+        .then((data) => setVendorProducts(data.data || []))
+        .catch((e) => console.error(e))
+        .finally(() => setLoadingProducts(false));
+    }
+  };
 
   const handleApprove = async (applicationId: number) => {
+    setAppError('');
     try {
       await apiFetch(`/admin/vendor-applications/${applicationId}/approve`, { method: 'POST' });
-      await loadApplications();
+      await loadApplications(appTab);
       await loadVendors();
     } catch (e) {
       console.error(e);
-      alert('Failed to approve vendor');
+      setAppError(e instanceof Error ? e.message : 'Failed to approve vendor');
     }
   };
 
   const handleReject = async (applicationId: number) => {
     if (!confirm('Reject this vendor application?')) return;
+    setAppError('');
     try {
       await apiFetch(`/admin/vendor-applications/${applicationId}/reject`, { method: 'POST' });
-      await loadApplications();
+      await loadApplications(appTab);
     } catch (e) {
       console.error(e);
-      alert('Failed to reject vendor');
+      setAppError(e instanceof Error ? e.message : 'Failed to reject vendor');
     }
   };
 
@@ -142,23 +219,22 @@ export const VendorsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
 
   const handleSaveEdit = async () => {
     if (!editingApplication) return;
+    setAppError('');
     try {
       await apiFetch(`/admin/vendor-applications/${editingApplication.id}`, {
         method: 'PUT',
         body: JSON.stringify(editForm),
       });
       setEditingApplication(null);
-      await loadApplications();
+      await loadApplications(appTab);
     } catch (e) {
       console.error(e);
-      alert('Failed to update application');
+      setAppError(e instanceof Error ? e.message : 'Failed to update application');
     }
   };
 
-  const totalPages = Math.ceil(vendors.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentVendors = vendors.slice(startIndex, endIndex);
+  const startIndex = (pager.current_page - 1) * pager.per_page;
+  const endIndex = startIndex + pager.per_page;
 
   if (loading) {
     return (
@@ -178,9 +254,9 @@ export const VendorsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
         >
           <UserPlus className="w-4 h-4" />
           Vendor Applications
-          {applicationsCount > 0 && (
+          {(appCounts.pending + appCounts.verified) > 0 && (
             <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-red-700 border border-red-200">
-              {applicationsCount}
+              {appCounts.pending + appCounts.verified}
             </span>
           )}
         </button>
@@ -190,23 +266,39 @@ export const VendorsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
-          placeholder="Search vendors..."
+          placeholder="Search vendors or stores..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
         />
       </div>
 
+      <div className="flex items-center gap-2">
+        {['All', 'Active', 'Suspended', 'Inactive'].map((status) => (
+          <button
+            key={status}
+            onClick={() => { setStatusFilter(status); setCurrentPage(1); }}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+              statusFilter === status
+                ? 'bg-slate-900 text-white'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {status}
+          </button>
+        ))}
+      </div>
+
       <DataTable
-        data={currentVendors}
+        data={vendors}
         columns={[
           { key: 'vendor', header: 'Vendor', render: (item: VendorData) => (
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
-                {item.name?.charAt(0).toUpperCase() || 'V'}
+                {item.store_name?.charAt(0).toUpperCase() || item.name?.charAt(0).toUpperCase() || 'V'}
               </div>
               <div>
-                <p className="font-semibold text-slate-900 text-sm">{item.store_name || item.name}</p>
+                <p className="font-semibold text-slate-900 text-sm">{item.store_name || '-'}</p>
                 <p className="text-xs text-slate-500">{item.name}</p>
               </div>
             </div>
@@ -230,20 +322,21 @@ export const VendorsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
           { key: 'actions', header: 'Actions', className: 'text-right', render: (item: VendorData) => (
             <div className="flex items-center justify-end gap-1">
               <button
-                onClick={() => setSelectedVendor(item)}
+                onClick={() => openVendor(item)}
                 className="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-red-50 transition-colors"
+                title="View store portfolio"
               >
                 <Eye className="w-4 h-4" />
               </button>
             </div>
           )},
         ]}
-        currentPage={currentPage}
+        currentPage={pager.current_page}
         setCurrentPage={setCurrentPage}
-        totalPages={totalPages}
+        totalPages={pager.last_page}
         startIndex={startIndex}
         endIndex={endIndex}
-        totalItems={vendors.length}
+        totalItems={pager.total}
       />
 
       {/* Vendor Applications Modal */}
@@ -253,26 +346,47 @@ export const VendorsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
             <div className="flex items-center justify-between p-5 border-b border-slate-200">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Vendor Applications</h3>
-                <p className="text-sm text-slate-500">{applicationsCount} pending applications</p>
+                <p className="text-sm text-slate-500">{appCounts.pending + appCounts.verified} awaiting decision</p>
               </div>
               <button onClick={() => setShowApplications(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-5">
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                {APP_TABS.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setAppTab(tab)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors ${
+                      appTab === tab ? 'bg-red-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {tab} ({appCounts[tab]})
+                  </button>
+                ))}
+              </div>
+              {appError && (
+                <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 font-medium">{appError}</div>
+              )}
               {loadingApps ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
                 </div>
               ) : applications.length === 0 ? (
-                <p className="text-slate-500 text-center py-8">No pending applications.</p>
+                <p className="text-slate-500 text-center py-8">No {appTab} applications.</p>
               ) : (
                 <div className="space-y-4">
                    {applications.map((app) => (
                      <div key={app.id} className="rounded-xl border border-slate-200 p-4">
                        <div className="flex items-start justify-between">
                          <div>
-                           <p className="font-semibold text-slate-900">{app.store_name}</p>
+                           <div className="flex items-center gap-2">
+                             <p className="font-semibold text-slate-900">{app.store_name}</p>
+                             <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold capitalize ${STATUS_BADGE[app.status] || 'bg-slate-100 text-slate-600'}`}>
+                               {app.status}
+                             </span>
+                           </div>
                            <p className="text-sm text-slate-500">{app.user.name} · {app.user.email}</p>
                            {app.description && <p className="text-sm text-slate-600 mt-1">{app.description}</p>}
                            {app.address && <p className="text-xs text-slate-500 mt-1">Address: {app.address}</p>}
@@ -286,27 +400,31 @@ export const VendorsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
                               <Eye className="w-3 h-3" />
                               See
                             </button>
-                            <button
-                              onClick={() => handleEdit(app)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-200 transition-colors"
-                            >
-                              <Pencil className="w-3 h-3" />
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleApprove(app.id)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 transition-colors"
-                            >
-                              <Check className="w-3 h-3" />
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleReject(app.id)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors"
-                            >
-                              <XCircle className="w-3 h-3" />
-                              Reject
-                            </button>
+                            {(app.status === 'pending' || app.status === 'verified') && (
+                              <>
+                                <button
+                                  onClick={() => handleEdit(app)}
+                                  className="inline-flex items-center gap-1 rounded-lg bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-200 transition-colors"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleApprove(app.id)}
+                                  className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 transition-colors"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleReject(app.id)}
+                                  className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors"
+                                >
+                                  <XCircle className="w-3 h-3" />
+                                  Reject
+                                </button>
+                              </>
+                            )}
                           </div>
                        </div>
                      </div>
@@ -463,6 +581,25 @@ export const VendorsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 md:col-span-2">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Store Address</p>
                   <p className="font-bold text-slate-900">{selectedVendor.address || selectedVendor.user_address || '-'}</p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 md:col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 flex items-center gap-1">
+                    <Package className="w-3 h-3" /> This vendor's products ({vendorProducts.length})
+                  </p>
+                  {loadingProducts ? (
+                    <p className="text-slate-500 text-xs">Loading products…</p>
+                  ) : vendorProducts.length === 0 ? (
+                    <p className="text-slate-500 text-xs">No products in this store yet.</p>
+                  ) : (
+                    <ul className="divide-y divide-slate-100">
+                      {vendorProducts.map((p) => (
+                        <li key={p.id} className="py-1.5 flex items-center justify-between gap-2">
+                          <span className="font-semibold text-slate-700 text-xs truncate">{p.name}</span>
+                          <span className="font-mono text-xs text-slate-500 whitespace-nowrap">Rs. {Number(p.price).toLocaleString()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Country</p>

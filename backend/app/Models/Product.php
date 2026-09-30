@@ -11,7 +11,7 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['vendor_store_id', 'category_id', 'name', 'sku', 'description', 'price', 'discount_percent', 'stock', 'image', 'specs', 'status', 'featured'];
+    protected $fillable = ['vendor_store_id', 'category_id', 'sub_category_id', 'super_sub_category_id', 'name', 'sku', 'description', 'price', 'discount_percent', 'stock', 'image', 'specs', 'status', 'featured'];
 
     protected $casts = [
         'specs' => 'array',

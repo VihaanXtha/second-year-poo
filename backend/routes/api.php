@@ -190,6 +190,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::get('/new-vendor-applications', [AdminController::class, 'newVendorApplications']);
     Route::post('/vendor-applications/{vendorApplication}/approve', [AdminController::class, 'approveVendor']);
     Route::post('/vendor-applications/{vendorApplication}/reject', [AdminController::class, 'rejectVendor']);
+    Route::put('/vendor-applications/{vendorApplication}', [AdminController::class, 'updateVendorApplication']);
     Route::get('/products', [AdminController::class, 'products']);
     Route::patch('/products/{product}/discount', [AdminController::class, 'setProductDiscount']);
 Route::patch('/products/{product}/featured', [AdminController::class, 'toggleFeatured']);

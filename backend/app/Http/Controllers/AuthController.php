@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
@@ -78,8 +79,10 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:20', 'unique:users,phone', 'regex:/^\+?[0-9\s\-()]{7,20}$/'],
+            // Uniqueness is per persona: the same email may also exist as a
+            // vendor and/or admin account, but only once as a customer.
+            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->where('role', 'customer')],
+            'phone' => ['nullable', 'string', 'max:20', Rule::unique('users', 'phone')->where('role', 'customer'), 'regex:/^\+?[0-9\s\-()]{7,20}$/'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'channel' => ['required', 'in:email,phone'],
             'address' => ['nullable', 'string', 'max:500'],
@@ -194,7 +197,7 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('role', 'customer')->where('email', $request->email)->first();
         if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
         }
@@ -259,7 +262,7 @@ class AuthController extends Controller
         if ($request->user_id) {
             $user = User::findOrFail($request->user_id);
         } elseif ($request->email) {
-            $user = User::where('email', $request->email)->first();
+            $user = User::where('role', 'customer')->where('email', $request->email)->first();
         }
 
         if (! $user) {
@@ -357,7 +360,7 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('role', 'customer')->where('email', $request->email)->first();
 
         if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
@@ -412,6 +415,9 @@ class AuthController extends Controller
             'identifier' => ['nullable', 'string'],
             'email' => ['nullable', 'email'],
             'password' => ['required', 'string'],
+            // Which persona is signing in: shop/frontend customers (default),
+            // or the admin portal which sends role=admin.
+            'role' => ['nullable', 'in:customer,vendor,admin'],
         ]);
 
         $validator->after(function ($validator) use ($request) {
@@ -425,9 +431,12 @@ class AuthController extends Controller
         }
 
         $identifier = $request->identifier ?: $request->email;
+        $role = $request->input('role', 'customer');
 
-        $user = User::where('email', $identifier)
-            ->orWhere('phone', $identifier)
+        $user = User::where('role', $role)
+            ->where(function ($q) use ($identifier) {
+                $q->where('email', $identifier)->orWhere('phone', $identifier);
+            })
             ->first();
 
         if (! $user) {
@@ -442,7 +451,10 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account has been banned.'], 403);
         }
 
-        if (! $user->phone_verified_at) {
+        // The OTP phone-verification gate only applies to customer accounts.
+        // Vendors sign in through the vendor portal and admins are created by
+        // other admins, so blocking them here would lock valid accounts out.
+        if ($user->role === 'customer' && ! $user->phone_verified_at) {
             return response()->json([
                 'message' => 'Phone verification is required before login.',
                 'requires_phone_verification' => true,
@@ -496,8 +508,14 @@ class AuthController extends Controller
             return redirect($origin.'/auth/callback?error=google_auth_failed');
         }
 
-        $user = User::where('google_id', $googleUser->getId())
-            ->orWhere('email', $googleUser->getEmail())
+        // Google sign-in always resolves the *customer* persona. An email that
+        // already belongs to a vendor or admin account gets its own customer
+        // account created here — the shared email links the personas.
+        $user = User::where('role', 'customer')
+            ->where(function ($q) use ($googleUser) {
+                $q->where('google_id', $googleUser->getId())
+                    ->orWhere('email', $googleUser->getEmail());
+            })
             ->first();
 
         if (! $user) {
@@ -604,7 +622,7 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('role', 'vendor')->where('email', $request->email)->first();
 
         if (! $user) {
             return response()->json(['message' => 'Email not found.'], 404);
@@ -699,7 +717,7 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('role', 'customer')->where('email', $request->email)->first();
 
         if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
@@ -729,7 +747,7 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('role', 'customer')->where('email', $request->email)->first();
 
         if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
@@ -781,7 +799,7 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('role', 'customer')->where('email', $request->email)->first();
 
         if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
@@ -812,13 +830,18 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => ['required', 'email'],
+            // Which persona to probe: the admin portal asks about admin
+            // accounts, the shop (default) about customer ones.
+            'role' => ['nullable', 'in:customer,vendor,admin'],
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $exists = User::where('email', $request->email)->exists();
+        $exists = User::where('email', $request->email)
+            ->where('role', $request->input('role', 'customer'))
+            ->exists();
 
         return response()->json([
             'exists' => $exists,
@@ -902,7 +925,7 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('role', 'vendor')->where('email', $request->email)->first();
 
         if (! $user || ! $user->must_change_password) {
             return response()->json(['message' => 'Invalid request.'], 422);

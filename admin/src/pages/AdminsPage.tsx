@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Eye, X, Shield, Plus, Trash2, Pencil } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
 import { Modal } from '../components/Modal';
+import { useAdminAuth } from '../context/AuthContext';
 
 interface ApiFetch {
   (endpoint: string, options?: RequestInit): Promise<any>;
@@ -19,38 +20,79 @@ interface AdminData {
 }
 
 export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
+  const { user: currentUser } = useAdminAuth();
   const [admins, setAdmins] = useState<AdminData[]>([]);
+  const [pager, setPager] = useState({ current_page: 1, last_page: 1, per_page: 8, total: 0 });
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedAdmin, setSelectedAdmin] = useState<AdminData | null>(null);
   const [openModal, setOpenModal] = useState(false);
   const [saving, setSaving] = useState(false);
-    const [form, setForm] = useState({ name: '', email: '', password: '', password_confirmation: '', status: 'active' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', password_confirmation: '', status: 'active' });
+  const [formError, setFormError] = useState('');
   const [editForm, setEditForm] = useState({ name: '', email: '', password: '', password_confirmation: '', status: 'active' });
+  const [editError, setEditError] = useState('');
   const itemsPerPage = 8;
 
-  const load = async () => {
+  const syncEditForm = (admin: AdminData) => {
+    setEditForm({ name: admin.name || '', email: admin.email || '', password: '', password_confirmation: '', status: admin.status || 'active' });
+    setEditError('');
+  };
+
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 400);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [searchQuery]);
+
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (searchQuery) params.set('search', searchQuery);
+      if (debouncedSearch) params.set('search', debouncedSearch);
       params.set('role', 'admin');
+      params.set('page', String(currentPage));
+      params.set('per_page', String(itemsPerPage));
       const data = await apiFetch(`/admin/users?${params.toString()}`);
       setAdmins(data.data || []);
-      setCurrentPage(1);
+      setPager({
+        current_page: data.current_page || 1,
+        last_page: Math.max(data.last_page || 1, 1),
+        per_page: data.per_page || itemsPerPage,
+        total: data.total || 0,
+      });
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiFetch, debouncedSearch, currentPage]);
 
-  useEffect(() => { load(); }, [apiFetch, searchQuery]);
+  useEffect(() => { load(); }, [load]);
+
+  const openView = (admin: AdminData) => {
+    syncEditForm(admin);
+    setSelectedAdmin(admin);
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.password.length < 8) {
+      setFormError('Password must be at least 8 characters.');
+      return;
+    }
+    if (form.password !== form.password_confirmation) {
+      setFormError('Password confirmation does not match.');
+      return;
+    }
     setSaving(true);
+    setFormError('');
     try {
       await apiFetch('/admin/users', {
         method: 'POST',
@@ -61,7 +103,7 @@ export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
       await load();
     } catch (e) {
       console.error(e);
-      alert('Failed to create admin');
+      setFormError(e instanceof Error ? e.message : 'Failed to create admin');
     } finally {
       setSaving(false);
     }
@@ -75,7 +117,7 @@ export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
       if (selectedAdmin?.id === id) setSelectedAdmin(null);
     } catch (e) {
       console.error(e);
-      alert('Failed to delete admin');
+      alert(e instanceof Error ? e.message : 'Failed to delete admin');
     }
   };
 
@@ -87,16 +129,26 @@ export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
         body: JSON.stringify({ status: newStatus }),
       });
       setAdmins(admins.map(a => a.id === admin.id ? { ...a, status: newStatus } : a));
+      if (selectedAdmin?.id === admin.id) setSelectedAdmin({ ...selectedAdmin, status: newStatus });
     } catch (e) {
       console.error(e);
-      alert('Failed to update admin status');
+      alert(e instanceof Error ? e.message : 'Failed to update admin status');
     }
   };
 
   const handleUpdateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-        if (!selectedAdmin) return;
+    if (!selectedAdmin) return;
+    if (editForm.password && editForm.password.length < 8) {
+      setEditError('New password must be at least 8 characters.');
+      return;
+    }
+    if (editForm.password && editForm.password !== editForm.password_confirmation) {
+      setEditError('Password confirmation does not match.');
+      return;
+    }
     setSaving(true);
+    setEditError('');
     try {
       const payload: any = {
         name: editForm.name,
@@ -115,16 +167,14 @@ export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
       setSelectedAdmin(null);
     } catch (e) {
       console.error(e);
-      alert('Failed to update admin');
+      setEditError(e instanceof Error ? e.message : 'Failed to update admin');
         } finally {
       setSaving(false);
     }
   };
 
-  const totalPages = Math.ceil(admins.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentAdmins = admins.slice(startIndex, endIndex);
+  const startIndex = (pager.current_page - 1) * pager.per_page;
+  const endIndex = startIndex + pager.per_page;
 
   if (loading) {
     return (
@@ -150,7 +200,7 @@ export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
       </div>
 
       <DataTable
-        data={currentAdmins}
+        data={admins}
         columns={[
           { key: 'admin', header: 'Admin', render: (item: AdminData) => (
             <div className="flex items-center gap-3">
@@ -186,36 +236,46 @@ export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
           { key: 'created_at', header: 'Joined', render: (item: AdminData) => (
             <span className="text-slate-500 font-mono text-xs">{new Date(item.created_at).toLocaleDateString()}</span>
           )},
-          { key: 'actions', header: 'Actions', className: 'text-right', render: (item: AdminData) => (
-                        <div className="flex items-center justify-end gap-1">
-              <button
-                onClick={() => { setEditForm({ name: item.name, email: item.email, password: '', password_confirmation: '', status: item.status }); setSelectedAdmin(item); }}
-                className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-                title="Edit"
-              >
-                                <Pencil className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setSelectedAdmin(item)}
-                className="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
-                title="View"
-              >
-                <Eye className="w-4 h-4" />
-              </button>
-              <button
-                className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          )},
+          { key: 'actions', header: 'Actions', className: 'text-right', render: (item: AdminData) => {
+            const isSelf = currentUser?.id === item.id;
+            return (
+              <div className="flex items-center justify-end gap-1">
+                <button
+                  onClick={() => openView(item)}
+                  className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                  title="Edit"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => openView(item)}
+                  className="p-1.5 text-slate-400 hover:text-primary rounded-lg hover:bg-slate-50 transition-colors"
+                  title="View"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  disabled={isSelf}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    isSelf
+                      ? 'text-slate-300 cursor-not-allowed'
+                      : 'text-slate-400 hover:text-red-600 hover:bg-red-50'
+                  }`}
+                  title={isSelf ? 'You cannot delete your own account' : 'Delete'}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          }},
         ]}
-        currentPage={currentPage}
+        currentPage={pager.current_page}
         setCurrentPage={setCurrentPage}
-        totalPages={totalPages}
+        totalPages={pager.last_page}
         startIndex={startIndex}
         endIndex={endIndex}
-        totalItems={admins.length}
+        totalItems={pager.total}
       />
 
       {/* Create Admin Modal */}
@@ -226,6 +286,9 @@ export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
         </>
       }>
         <form onSubmit={handleCreate} className="space-y-4">
+          {formError && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 font-medium">{formError}</div>
+          )}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
             <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" required />
@@ -235,8 +298,8 @@ export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
             <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" required />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-            <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" required />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Password (min 8 characters)</label>
+            <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" required minLength={8} />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Confirm Password</label>
@@ -292,6 +355,9 @@ export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
                             </div>
               <form onSubmit={handleUpdateAdmin} className="space-y-4 border-t border-slate-100 pt-4">
                 <h4 className="text-sm font-semibold text-slate-900">Edit Admin</h4>
+                {editError && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 font-medium">{editError}</div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Name</label>
                   <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" required />
@@ -322,13 +388,17 @@ export const AdminsPage: React.FC<{ apiFetch: ApiFetch }> = ({ apiFetch }) => {
                 </div>
               </form>
               <div className="pt-2">
-                <button
-                  onClick={() => handleDelete(selectedAdmin.id)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete Admin
-                </button>
+                {currentUser?.id === selectedAdmin.id ? (
+                  <p className="text-xs text-slate-500 font-medium">This is your own account — it cannot be deleted.</p>
+                ) : (
+                  <button
+                    onClick={() => handleDelete(selectedAdmin.id)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Admin
+                  </button>
+                )}
               </div>
             </div>
           </div>

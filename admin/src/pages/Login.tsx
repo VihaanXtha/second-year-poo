@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, Mail, AlertCircle, Eye, EyeOff, Package } from 'lucide-react';
-import { useAdminAuth } from '../context/AuthContext';
+import { useAdminAuth, getApiUrl } from '../context/AuthContext';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -17,10 +17,10 @@ export const Login: React.FC = () => {
       return;
     }
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/check-email`, {
+      const res = await fetch(`${getApiUrl()}/auth/check-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: value }),
+        body: JSON.stringify({ email: value, role: 'admin' }),
       });
       const data = await res.json();
       if (!res.ok) {

@@ -33,7 +33,10 @@ export default function App() {
 
       const res = await fetch(`${getApiUrl()}${endpoint}`, { ...options, headers });
 
-      if (res.status === 401 || res.status === 403) {
+      // 401 = dead session (go back to login). 403 = "you may not do this" — keep
+      // the session alive so the caller can show the reason instead of silently
+      // bouncing to the login screen and losing the message.
+      if (res.status === 401) {
         logout();
       }
 
@@ -42,8 +45,14 @@ export default function App() {
       const payload = isJson ? await res.json().catch(() => ({})) : await res.text();
 
       if (!res.ok) {
+        const body = payload as { message?: string; errors?: Record<string, string[]> } | string;
+        const fieldErrors =
+          typeof body === 'object' && body && body.errors
+            ? Object.values(body.errors).reduce<string[]>((acc, msgs) => acc.concat(msgs), []).join(' ')
+            : '';
+        const baseMessage = typeof body === 'string' ? body : (body && body.message) || '';
         const message =
-          (isJson && (payload as any).message) || (typeof payload === 'string' ? payload : 'Request failed');
+          fieldErrors || baseMessage || (typeof body === 'string' ? body : '') || `Request failed (${res.status})`;
         throw new Error(message || 'Request failed');
       }
       return payload as T;
