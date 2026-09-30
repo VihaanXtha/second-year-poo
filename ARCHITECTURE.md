@@ -19,7 +19,7 @@ Circuit Bazaar is a **specification-first hardware marketplace for Nepal**. One 
 | `graft/` | Auto-generated per-file `.md` docs — NOT hand-written code | tooling | — |
 | `sql/`, `.claude/`, `.kilo/`, `.clinerules/` | tooling/config only, no tracked code | — | — |
 
-Root config of note: each frontend app is deployed independently (frontend/shop/admin/vendor → Vercel as `home.circuit`/`shop.circuit`/`admin.circuit`/`vender.circuit`, backend → Railway as `backend.circuit`). Each app has a `Dockerfile` + `vercel.json` + `.env.example`. README documents local no-Docker dev: `php artisan serve` for backend, `npm run dev` per frontend app. DB: local MySQL 8 `circuit_bazaar`, user `root`, empty password, `localhost:3306`.
+Root config of note: each frontend app is deployed independently (frontend/shop/admin/vendor → Vercel as `home.circuit`/`shop.circuit`/`admin.circuit`/`vender.circuit`, backend → Railway as `backend.circuit`). Each app has a `Dockerfile` + `vercel.json` + `.env.example`. README documents local no-Docker dev: `php artisan serve` for backend, `npm run dev` per frontend app. DB: SQLite by default for the local `start.bat` workflow, or MySQL 8 `circuit_bazaar` via the Docker stack (root / root, `localhost:3307`, phpMyAdmin on `localhost:8081`) - MySQL is Docker-only, see `docker-compose.yml` + `backend/docker/`.
 
 ## How the apps connect
 

@@ -8,7 +8,7 @@ echo ============================================
 echo    Frontend : http://localhost:3000
 echo    Admin    : http://localhost:3001
 echo    Vendor   : http://localhost:3002
-echo    Shop     : http://localhost:3003/shop
+echo    Shop     : http://localhost:3003
 echo    Backend  : http://localhost:8000/api
 echo ============================================
 echo.
